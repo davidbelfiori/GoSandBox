@@ -1,0 +1,5060 @@
+% !TEX program = xelatex
+\documentclass[11pt,a4paper]{report}
+
+\usepackage{fontspec}
+\usepackage[italian]{babel}
+\usepackage[a4paper,margin=2.6cm,headheight=14pt]{geometry}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{array}
+\usepackage{longtable}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setcounter{tocdepth}{1}
+
+% ---------------------------------------------------------------------------
+% Supporto ai caratteri CJK (usati solo da "Hello, 世界" della slide 8).
+% Se nel sistema non c'è un font CJK noto, si ripiega su una sigla testuale,
+% così il documento compila ovunque.
+% ---------------------------------------------------------------------------
+\newif\ifhascjk
+\hascjkfalse
+\def\cjkname{}
+\newcommand{\trycjk}[1]{%
+  \ifhascjk\else\IfFontExistsTF{#1}{\def\cjkname{#1}\hascjktrue}{}\fi}
+\trycjk{Microsoft YaHei}
+\trycjk{PingFang SC}
+\trycjk{Noto Sans CJK SC}
+\trycjk{Source Han Sans SC}
+\trycjk{WenQuanYi Zen Hei}
+\trycjk{SimSun}
+\ifhascjk
+  \usepackage{xeCJK}
+  \setCJKmainfont{\cjkname}
+  \setCJKsansfont{\cjkname}
+  \setCJKmonofont{\cjkname}
+\fi
+
+% ---------------------------------------------------------------------------
+% Colori
+% ---------------------------------------------------------------------------
+\definecolor{gokw}{HTML}{9B2393}
+\definecolor{gotype}{HTML}{1C6E8C}
+\definecolor{gostr}{HTML}{B3261E}
+\definecolor{gocom}{HTML}{4F7A28}
+\definecolor{gonum}{HTML}{8A5A00}
+\definecolor{codebg}{HTML}{F7F7F9}
+\definecolor{outbg}{HTML}{FFF8E1}
+\definecolor{defcol}{HTML}{1F4E9C}
+\definecolor{notecol}{HTML}{2E7D32}
+\definecolor{warncol}{HTML}{B3261E}
+\definecolor{cmpcol}{HTML}{6A3FA0}
+
+% ---------------------------------------------------------------------------
+% listings: linguaggio Go
+% ---------------------------------------------------------------------------
+\lstdefinelanguage{Go}{
+  morekeywords={break,case,chan,const,continue,default,defer,else,fallthrough,
+    for,func,go,goto,if,import,interface,map,package,range,return,select,
+    struct,switch,type,var},
+  morekeywords=[2]{bool,byte,complex128,error,float32,float64,int,int8,int16,
+    int32,int64,rune,string,uint,uint8,uint16,uint32,uint64,uintptr,any},
+  morekeywords=[3]{true,false,nil,iota},
+  morekeywords=[4]{append,cap,close,copy,delete,len,make,new,panic,print,
+    println,recover},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]`,
+  morestring=[b]'
+}
+
+\lstdefinestyle{gocode}{
+  language=Go,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{gokw}\bfseries,
+  keywordstyle=[2]\color{gotype},
+  keywordstyle=[3]\color{gonum},
+  keywordstyle=[4]\color{gotype}\bfseries,
+  commentstyle=\color{gocom}\itshape,
+  stringstyle=\color{gostr},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=7pt,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{black!25},
+  framesep=4pt,
+  xleftmargin=14pt,
+  framexleftmargin=14pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  postbreak=\mbox{\textcolor{gray}{$\hookrightarrow$}\space},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=4,
+  captionpos=t,
+  aboveskip=1.2em,
+  belowskip=0.8em,
+  upquote=true
+}
+
+\lstdefinestyle{output}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{outbg},
+  frame=leftline,
+  rulecolor=\color{orange!70!black},
+  framesep=6pt,
+  xleftmargin=6pt,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=0.6em,
+  belowskip=1em
+}
+
+\lstdefinestyle{shell}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{black!5},
+  frame=leftline,
+  rulecolor=\color{black!50},
+  framesep=6pt,
+  xleftmargin=6pt,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=0.6em,
+  belowskip=1em
+}
+
+\renewcommand{\lstlistingname}{Listato}
+
+% Codice in linea
+\newcommand{\cod}[1]{\texttt{#1}}
+
+% ---------------------------------------------------------------------------
+% Box didattici
+% ---------------------------------------------------------------------------
+\tcbset{
+  boxstyle/.style={enhanced, breakable, boxrule=0.6pt, arc=2pt,
+    left=8pt,right=8pt,top=5pt,bottom=5pt,
+    fonttitle=\bfseries\sffamily\small, before skip=0.9em, after skip=0.9em}
+}
+\newtcolorbox{definizione}[1]{boxstyle, colback=defcol!6, colframe=defcol,
+  title={Definizione --- #1}}
+\newtcolorbox{nota}[1][Osservazione]{boxstyle, colback=notecol!6, colframe=notecol,
+  title={#1}}
+\newtcolorbox{attenzione}[1][Errore comune]{boxstyle, colback=warncol!6, colframe=warncol,
+  title={#1}}
+\newtcolorbox{confronto}[1]{boxstyle, colback=cmpcol!6, colframe=cmpcol,
+  title={Confronto --- #1}}
+
+% ---------------------------------------------------------------------------
+% Intestazioni e struttura
+% ---------------------------------------------------------------------------
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\bfseries\Huge\color{defcol}}
+  {\chaptertitlename\ \thechapter}{12pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{24pt}
+\titleformat{\section}{\normalfont\sffamily\bfseries\Large\color{defcol!80!black}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\sffamily\bfseries\large}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalfont\sffamily\bfseries\normalsize\itshape}{}{0pt}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily Guida a Go}
+\fancyhead[R]{\small\sffamily\leftmark}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% Riduce gli overfull nei paragrafi con molti nomi di file.
+\emergencystretch=3em
+\newcommand{\fn}[1]{\texttt{#1}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlist{itemsep=0.15em, topsep=0.3em}
+
+\usepackage[hidelinks,pdfusetitle,bookmarksnumbered]{hyperref}
+\hypersetup{pdftitle={Guida a Go},pdfsubject={Guida tecnica e didattica al linguaggio Go},pdflang={it}}
+
+\begin{document}
+
+% ===========================================================================
+% FRONTESPIZIO
+% ===========================================================================
+\begin{titlepage}
+\centering
+\vspace*{2.2cm}
+{\sffamily\bfseries\fontsize{40}{46}\selectfont\color{defcol} Guida a Go\par}
+\vspace{0.6cm}
+{\sffamily\Large Dal programma «Hello, World» alla concorrenza\par}
+\vspace{1.2cm}
+\rule{0.6\textwidth}{0.6pt}\par
+\vspace{0.8cm}
+{\large Guida tecnica e didattica al linguaggio Go\\[0.3em]
+per studenti di Ingegneria Informatica\par}
+\vspace{2.2cm}
+\begin{minipage}{0.8\textwidth}
+\centering
+\small
+Il contenuto è ricavato dalle slide \emph{Introduction to Go}\\
+del corso di \emph{Sistemi Distribuiti e Cloud Computing}, A.A.\ 2025/26,\\
+Laurea Magistrale in Ingegneria Informatica, Università di Roma Tor Vergata\\
+(autrice delle slide: Valeria Cardellini).
+\end{minipage}
+\vfill
+{\small Gli esempi di codice di questa guida si trovano nella cartella \texttt{examples/}\\
+e sono stati compilati ed eseguiti con Go 1.27.3.\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+% ===========================================================================
+% INTRODUZIONE
+% ===========================================================================
+\chapter*{Introduzione e obiettivi}
+\addcontentsline{toc}{chapter}{Introduzione e obiettivi}
+\markboth{Introduzione}{Introduzione}
+
+\section*{A chi si rivolge e che cosa contiene}
+
+Questa guida trasforma le slide del corso in un testo organico per lo studio
+individuale. Presuppone che il lettore conosca già la programmazione e abbia
+familiarità con C, Python e Java: i concetti generali (variabili, cicli,
+funzioni, ricorsione, \ldots) non vengono rispiegati. L'attenzione è invece sulle
+scelte specifiche di Go e su come si collocano rispetto ai linguaggi già noti.
+
+Gli argomenti sono esattamente quelli delle slide, in una successione
+leggermente riordinata per rendere l'apprendimento più naturale
+(per esempio i moduli sono trattati insieme alla toolchain, e la gestione degli
+errori insieme alle interfacce). Sono stati omessi, perché non contribuiscono
+all'apprendimento tecnico, i cenni storici, le classifiche di popolarità dei
+linguaggi e i riferimenti bibliografici o web. Quando una slide accenna soltanto
+a un argomento (per esempio RPC o il package \cod{net/http}), la guida lo
+segnala ma non lo sviluppa.
+
+\section*{Come è organizzata la guida}
+
+\begin{center}
+\small
+\begin{tabular}{@{}rll@{}}
+\toprule
+\textbf{Cap.} & \textbf{Argomento} & \textbf{Cartella degli esempi}\\
+\midrule
+1 & Il linguaggio Go in sintesi & ---\\
+2 & Struttura del programma, package, toolchain, moduli & \texttt{01\_basics}\\
+3 & Variabili e tipi & \texttt{01\_basics}\\
+4 & Funzioni, closure, funzioni variadiche & \texttt{02\_functions}\\
+5 & Controllo di flusso e \cod{defer} & \texttt{03\_control\_flow}\\
+6 & Puntatori e strutture dati & \texttt{04\_data\_structures}\\
+7 & Metodi, interfacce, errori & \texttt{05\_methods\_interfaces}\\
+8 & Concorrenza & \texttt{06\_concurrency}\\
+9 & Test e benchmark & \texttt{07\_testing\_and\_tools}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Le due appendici raccolgono la mappa tra slide, sezioni ed esempi (Appendice~A) e
+le note della verifica incrociata, comprese le correzioni a errori trovati nelle
+slide (Appendice~B).
+
+\section*{Come usare gli esempi}
+
+Ogni listato della guida riporta il nome del file corrispondente nella cartella
+\texttt{examples/}. Il testo dei listati è incluso \emph{automaticamente} dai file
+\texttt{.go} reali, quindi guida ed esempi non possono divergere. Anche gli output
+mostrati sono stati ottenuti eseguendo i programmi; quando l'output non è
+deterministico, il testo lo dice esplicitamente.
+
+Ogni file è un programma indipendente (\cod{package main}) da eseguire dalla
+cartella \texttt{examples/}, che contiene un file \texttt{go.mod} condiviso:
+
+\begin{lstlisting}[style=shell]
+cd examples
+go run 01_basics/helloworld.go
+go run 03_control_flow/echo.go Hello Go World
+\end{lstlisting}
+
+Poiché ogni cartella contiene più programmi con un proprio \cod{main}, non si
+usa \cod{go build ./...} sull'intera cartella (il compilatore segnalerebbe
+\cod{main redeclared}): si esegue un file alla volta. L'unica eccezione è la
+cartella \texttt{07\_testing\_and\_tools}, che è un package ordinario testato con
+\cod{go test} (Capitolo~\ref{ch:test}). Serve Go 1.22 o successivo (si veda la
+nota sulle variabili di ciclo nel Capitolo~\ref{ch:conc}).
+
+\section*{Convenzioni grafiche}
+
+\begin{definizione}{esempio}
+Un box blu introduce una definizione precisa di un concetto.
+\end{definizione}
+\begin{nota}
+Un box verde raccoglie un'osservazione importante da ricordare.
+\end{nota}
+\begin{attenzione}
+Un box rosso descrive un errore frequente, spiegando \emph{perché} avviene e come
+evitarlo.
+\end{attenzione}
+\begin{confronto}{C, Python, Java}
+Un box viola mette a confronto il costrutto Go con quelli dei linguaggi noti.
+\end{confronto}
+
+I blocchi con sfondo giallo e barra arancione riportano l'output reale dei programmi.
+
+% ===========================================================================
+\chapter{Il linguaggio Go in sintesi}\label{ch:go}
+% ===========================================================================
+
+Prima di scrivere codice conviene capire \emph{che tipo di linguaggio} è Go e
+quali problemi i suoi progettisti hanno voluto risolvere. Molte scelte che a
+prima vista sembrano restrizioni (niente eccezioni, niente classi, niente
+aritmetica dei puntatori, regole di formattazione rigide) sono conseguenze
+dirette di questi obiettivi.
+
+\section{Obiettivi di progetto}
+
+Go è definito come un linguaggio open source che rende facile costruire sistemi
+\emph{semplici}, \emph{sicuri} e \emph{scalabili}. In termini più tecnici, gli
+obiettivi dichiarati sono tre:
+
+\begin{enumerate}
+  \item essere \textbf{espressivo ed efficiente} sia in compilazione sia in
+        esecuzione;
+  \item favorire la scrittura di programmi \textbf{affidabili e robusti};
+  \item offrire un linguaggio \textbf{staticamente tipato e compilato
+        rapidamente}, ma che \emph{si usi} come un linguaggio a tipizzazione
+        dinamica e interpretato.
+\end{enumerate}
+
+L'ultimo punto è il più interessante. Un programmatore Python scrive poche
+righe e ottiene subito un risultato, ma scopre molti errori solo a runtime; un
+programmatore C ottiene prestazioni elevate ma deve annotare tutto e gestire
+manualmente la memoria. Go cerca un compromesso: ogni variabile ha un tipo
+statico verificato dal compilatore, ma l'\emph{inferenza di tipo} (Capitolo~\ref{ch:tipi})
+evita di ripeterlo continuamente, e la compilazione è abbastanza veloce da
+rendere il ciclo modifica--esecuzione simile a quello di un linguaggio interpretato
+(\cod{go run}, Sezione~\ref{sec:toolchain}).
+
+\section{Che cosa Go eredita da C}
+
+Go è spesso descritto come un linguaggio «C-like» o «il C per il ventunesimo
+secolo». Dal C eredita:
+
+\begin{itemize}
+  \item la \textbf{sintassi delle espressioni};
+  \item le \textbf{istruzioni di controllo del flusso} (\cod{for}, \cod{if}, \cod{switch});
+  \item i \textbf{tipi di dato di base};
+  \item il \textbf{passaggio dei parametri per valore} (\emph{call-by-value}):
+        ogni argomento è copiato nel parametro formale;
+  \item i \textbf{puntatori};
+  \item l'\textbf{efficienza a runtime};
+  \item la \textbf{tipizzazione statica}.
+\end{itemize}
+
+Per la concorrenza, invece, l'antenato dichiarato è il modello \textbf{CSP}
+(\emph{Communicating Sequential Processes}, formulato da Tony Hoare): processi
+sequenziali indipendenti che cooperano scambiandosi messaggi anziché condividendo
+memoria. Questo modello è implementato da goroutine e channel
+(Capitolo~\ref{ch:conc}).
+
+\section{Le novità rispetto a C}
+
+Le slide raggruppano le funzionalità moderne di Go in quattro aree.
+
+\begin{description}
+  \item[Concorrenza.] Strumenti nuovi ed efficienti per la programmazione
+        concorrente, parte del linguaggio e non di una libreria esterna.
+  \item[Astrazione dei dati e programmazione a oggetti.] Un approccio flessibile
+        basato sulla \emph{composizione} piuttosto che sull'ereditarietà. Go non ha
+        classi: il comportamento si associa a un tipo con i \emph{metodi}
+        e si astrae con le \emph{interfacce} (Capitolo~\ref{ch:oop}).
+  \item[Gestione della memoria.] Gestione automatica con \emph{garbage
+        collection}: il programmatore non libera esplicitamente la memoria.
+  \item[Leggibilità e usabilità.] Sintassi pulita e concisa, pensata per codice
+        manutenibile e leggibile.
+\end{description}
+
+\begin{confronto}{gestione della memoria}
+In \textbf{C} la memoria dinamica si alloca con \cod{malloc} e si libera con
+\cod{free}; errori come il \emph{use-after-free} o i \emph{memory leak} sono a
+carico del programmatore. \textbf{Java} e \textbf{Python} hanno anch'essi un
+garbage collector (Python in CPython combina conteggio dei riferimenti e
+rilevazione dei cicli). \textbf{Go} si colloca dalla parte di Java e Python:
+il runtime libera automaticamente gli oggetti non più raggiungibili, eliminando
+in particolare i problemi di use-after-free. A differenza di Java e Python, però,
+Go espone i puntatori (senza aritmetica, Sezione~\ref{sec:puntatori}) e produce
+codice nativo compilato, senza macchina virtuale né interprete.
+\end{confronto}
+
+\section{Go per i sistemi distribuiti e il cloud}
+
+Le slide motivano Go nel contesto dei sistemi distribuiti: il linguaggio permette
+di concentrarsi sui problemi del distribuito grazie a
+
+\begin{itemize}
+  \item un buon supporto alla \textbf{concorrenza};
+  \item un buon supporto alle \textbf{RPC} (\emph{Remote Procedure Call});
+  \item il \textbf{garbage collector}, che evita i problemi di \emph{use-after-free};
+  \item la \textbf{sicurezza dei tipi} (\emph{type safety});
+  \item la facilità di apprendimento e manutenzione.
+\end{itemize}
+
+Go è inoltre sempre più usato per le applicazioni \emph{cloud-native}. A titolo di
+esempio, le slide citano la libreria \emph{Go Cloud}, che fornisce astrazioni sui
+servizi dei diversi fornitori cloud: lo stesso codice può leggere un oggetto da
+un \emph{blob storage} indipendentemente dal provider sottostante, cambiando solo
+l'URL del bucket. Il frammento seguente riproduce quello della slide.
+
+\begin{lstlisting}[style=gocode,caption={Frammento della slide sul Go Cloud (non eseguibile in isolamento)}]
+ctx := context.Background()
+bucket, err := blob.OpenBucket(ctx, "s3://my-bucket")
+if err != nil {
+	return err
+}
+defer bucket.Close()
+blobReader, err := bucket.NewReader(ctx, "my-blob", nil)
+if err != nil {
+	return err
+}
+\end{lstlisting}
+
+\begin{nota}[Perché questo frammento non ha un file in \texttt{examples/}]
+Il codice richiede la libreria esterna \emph{Go Cloud}, credenziali del provider
+e un bucket esistente: non è eseguibile né verificabile in modo autonomo, e
+usarlo come esempio introdurrebbe argomenti esterni al programma. Il frammento
+è utile soprattutto per riconoscere i pattern già visti: la
+coppia risultato/errore (Sezione~\ref{sec:errori}), il controllo \cod{err != nil}
+e l'istruzione \cod{defer} per la pulizia (Sezione~\ref{sec:defer}).
+\end{nota}
+
+\section{Ambiente di sviluppo}
+
+Go si può scrivere con un qualsiasi editor di testo; gli ambienti indicati dalle
+slide sono \textbf{GoLand} (IDE di JetBrains), \textbf{Visual Studio Code} e, per
+chi usa vim o neovim, il plugin \textbf{vim-go}.
+
+Dietro le quinte tutti questi strumenti si appoggiano a \textbf{gopls}, il
+\emph{language server} ufficiale di Go. Un language server implementa il
+\emph{Language Server Protocol} (LSP), uno standard con cui un editor
+ottiene da un processo separato le funzioni avanzate di supporto al
+linguaggio: completamento del codice, documentazione al passaggio del mouse,
+ricerca dei simboli, diagnostica ed errori. Il vantaggio architetturale è che
+l'intelligenza sul linguaggio è scritta una sola volta (in \cod{gopls}) e
+riutilizzata da qualunque editor che parli LSP.
+
+% ===========================================================================
+\chapter{Struttura del programma, package e toolchain}\label{ch:struttura}
+% ===========================================================================
+
+\section{Il primo programma}
+
+\subsection{Esempio pratico}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{01\_basics/helloworld.go}}]
+// helloworld.go - Primo programma Go (slide 8-9).
+//
+// Ogni file inizia con la dichiarazione del package. Il package "main" è
+// speciale: dice al toolchain di produrre un eseguibile, il cui punto di
+// ingresso è la funzione main().
+package main
+
+// "fmt" fornisce l'I/O formattato (Println, Printf, ...).
+import "fmt"
+
+func main() {
+	// Le stringhe Go sono UTF-8 nativamente: nessuna configurazione
+	// particolare serve per stampare caratteri non ASCII.
+	fmt.Println("Hello, 世界")
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Hello, 世界
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \textbf{Nessun punto e virgola} a fine istruzione o dichiarazione. In
+        realtà il compilatore li inserisce automaticamente a fine riga in certi
+        casi (si veda l'errore comune più avanti); il programmatore non li scrive.
+  \item \textbf{Supporto Unicode nativo}: il sorgente è UTF-8 e le stringhe
+        contengono testo Unicode, come mostra la stringa \cod{"Hello, 世界"}.
+  \item \textbf{Struttura a package}: ogni programma Go è composto da
+        \emph{package} (concetto analogo alle librerie C o ai moduli Python).
+        Un package è costituito da uno o più file \cod{.go} nella stessa directory.
+  \item \textbf{Struttura di un file sorgente}: inizia con la
+        \emph{dichiarazione del package} (a quale package appartiene il file),
+        seguita dagli \cod{import} degli altri package.
+  \item \textbf{Punto di ingresso}: l'esecuzione parte dal package \cod{main} e
+        dalla sua funzione \cod{main()}.
+  \item Il package \cod{fmt} fornisce le funzioni per l'input e l'output
+        formattato (\cod{Println}, \cod{Printf}, \ldots).
+\end{itemize}
+
+\begin{attenzione}[Errore comune: la graffa \cod{\{} a capo]
+Poiché i punti e virgola sono inseriti dal compilatore a fine riga, la graffa
+aperta deve stare sulla stessa riga della parola chiave. In particolare in un
+\cod{if}\,/\,\cod{else} l'\cod{else} deve comparire subito dopo la \cod{\}} che
+chiude il blocco precedente. Il codice
+\begin{lstlisting}[style=gocode,numbers=none,frame=none,backgroundcolor={},aboveskip=0.3em,belowskip=0.3em]
+if x > 0 {
+	fmt.Println(1)
+}
+else {
+	fmt.Println(2)
+}
+\end{lstlisting}
+non compila: dopo la \cod{\}} della riga~3 il compilatore inserisce un
+punto e virgola, l'istruzione \cod{if} risulta conclusa, e la riga successiva inizia
+con un \cod{else} inatteso. Il messaggio reale è:
+\texttt{syntax error: unexpected keyword else, expected \}}.
+\end{attenzione}
+
+\section{Package e visibilità}
+
+Un programma Go è composto da package, e l'esecuzione parte dal package
+\cod{main}. Un package può contenere dichiarazioni di tipi, funzioni, variabili
+e costanti, e può essere molto piccolo o molto grande.
+
+\begin{definizione}{regola di visibilità}
+In Go la \textbf{visibilità} di un nome fuori dal package che lo dichiara è
+determinata dalla \emph{maiuscola iniziale}. Un nome che inizia con una lettera
+\textbf{maiuscola} è \emph{esportato} (pubblico); uno che inizia con una lettera
+\textbf{minuscola} non è esportato (privato al package).
+\end{definizione}
+
+Così \cod{Foo} è esportato e \cod{foo} no. Un esempio concreto: \cod{math.Pi} è
+visibile da altri package, mentre \cod{math.pi} non lo è, e usarlo produce un
+errore di compilazione. Le slide riportano il messaggio
+\texttt{./prog.go:9:19: undefined: math.pi}; il compilatore usato per
+verificare questa guida (Go 1.27.3) lo completa con un suggerimento:
+
+\begin{lstlisting}[style=output]
+undefined: math.pi (but have Pi)
+\end{lstlisting}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{Java} la visibilità si controlla con le parole chiave
+\cod{public}/\cod{private}/\cod{protected}; in \textbf{C} con \cod{static} (a
+livello di file) e con ciò che si dichiara negli header; in \textbf{Python} vale
+solo la convenzione del prefisso \cod{\_}. In \textbf{Go} la regola è
+\emph{imposta dal compilatore} ed è codificata nel nome stesso: guardando un
+identificatore si sa subito se fa parte dell'interfaccia pubblica di un package.
+\end{confronto}
+
+\section{Importare package}\label{sec:import}
+
+L'istruzione \cod{import} include altri package. Gli import si possono
+raggruppare in una forma «fattorizzata» tra parentesi, più leggibile della
+ripetizione di tante istruzioni \cod{import}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{01\_basics/imports.go}}]
+// imports.go - Import "fattorizzato" tra parentesi (slide 12) e visibilità
+// dei nomi (slide 11).
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+func main() {
+	// math.Sqrt restituisce un float64; %g sceglie la forma compatta
+	// più breve tra %e (esponenziale) e %f (decimale).
+	fmt.Printf("Now you have %g problems.\n", math.Sqrt(7))
+
+	// Un nome esportato (iniziale maiuscola) è accessibile dall'esterno:
+	// math.Pi è visibile, mentre math.pi non esiste e l'uso di math.pi
+	// produce l'errore di compilazione "undefined: math.pi".
+	fmt.Println("math.Pi =", math.Pi)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Now you have 2.6457513110645907 problems.
+math.Pi = 3.141592653589793
+\end{lstlisting}
+
+Il formato \cod{\%g} stampa un numero in virgola mobile nella forma compatta,
+scegliendo automaticamente la più corta tra \cod{\%e} (esponenziale) e \cod{\%f}
+(decimale). Si noti inoltre che l'uso di \cod{math.Sqrt(7)} richiede il prefisso
+del package (\cod{math.}): i nomi importati non vengono mai «riversati» nello
+spazio dei nomi locale.
+
+\section{La toolchain di Go}\label{sec:toolchain}
+
+Go è un linguaggio \textbf{compilato}. Il comando \cod{go} è la \emph{toolchain}
+con cui si scaricano, compilano e installano package e comandi. Un punto
+distintivo è la \textbf{configurazione zero}: non servono script di build esterni
+né makefile; il compilatore ricava le dipendenze dagli stessi file sorgente.
+
+\begin{description}
+  \item[\texttt{go run}] compila ed esegue direttamente il programma.
+  \item[\texttt{go build}] produce un eseguibile binario.
+  \item[\texttt{go install}] compila e installa package o comandi.
+\end{description}
+
+\begin{lstlisting}[style=shell]
+$ go run helloworld.go
+Hello, 世界
+$ go build helloworld.go
+$ ls helloworld*
+helloworld      helloworld.go
+$ ./helloworld
+Hello, 世界
+\end{lstlisting}
+
+Su Windows l'eseguibile prodotto da \cod{go build} si chiama
+\texttt{helloworld.exe}. Il comando \cod{go run} compila in una directory
+temporanea ed esegue il risultato: è comodo in fase di sviluppo, ma il binario non
+viene conservato.
+
+\begin{confronto}{Java, Python, C}
+Rispetto a \textbf{Java}, il binario di Go è già codice macchina nativo: non
+richiede una JVM per essere eseguito. Rispetto a \textbf{C}, non servono
+\cod{Makefile} o \cod{CMake}: le dipendenze sono dichiarate dagli \cod{import}.
+Rispetto a \textbf{Python}, la compilazione è un passo esplicito (\cod{go build})
+ma \cod{go run} lo nasconde offrendo un ciclo modifica--esecuzione rapido.
+\end{confronto}
+
+\section{Moduli}\label{sec:moduli}
+
+\begin{definizione}{modulo}
+Un \textbf{modulo} è un insieme di package Go correlati, memorizzati in una
+struttura di directory con un file \texttt{go.mod} nella radice.
+\end{definizione}
+
+Il file \texttt{go.mod} definisce:
+
+\begin{itemize}
+  \item il \textbf{percorso del modulo} (\emph{module path}), usato anche come
+        percorso di import per la directory radice;
+  \item la \textbf{versione minima di Go} richiesta dal modulo;
+  \item le \textbf{dipendenze}: gli altri moduli necessari per una compilazione
+        corretta, con la relativa versione minima.
+\end{itemize}
+
+Un esempio, come nelle slide:
+
+\begin{lstlisting}[style=shell,caption={Esempio di \texttt{go.mod} (dalla slide)}]
+module example.com/mymodule
+
+go 1.17
+
+require github.com/gorilla/mux v1.8.0
+\end{lstlisting}
+
+I comandi principali sono:
+
+\begin{lstlisting}[style=shell]
+$ go mod init <nome_modulo>   # crea il file go.mod
+$ go mod tidy                 # aggiunge i requisiti mancanti e rimuove quelli inutilizzati
+\end{lstlisting}
+
+Nella cartella \texttt{examples/} di questa guida il file \texttt{go.mod} è
+minimo, perché gli esempi usano solo la libreria standard:
+
+\begin{lstlisting}[style=shell,caption={\texttt{examples/go.mod}}]
+module goguide
+
+go 1.22
+\end{lstlisting}
+
+\section{Regole del compilatore e strumenti di qualità}\label{sec:strumenti}
+
+Go è «pignolo»: alcune pratiche che in altri linguaggi producono al massimo un
+\emph{warning} qui sono \textbf{errori di compilazione}. Il motivo è tenere il
+codice pulito per costruzione e rendere la lettura di sorgenti altrui più
+prevedibile.
+
+\begin{itemize}
+  \item Una \textbf{variabile dichiarata e non usata} è un errore.
+  \item Un \textbf{import non usato} è un errore.
+  \item In un \cod{if}/\cod{else} la graffa \cod{\{} deve stare alla fine della
+        stessa riga (\cod{\} else \{}, \cod{\} else if \ldots\ \{}); si veda
+        l'errore comune sopra.
+\end{itemize}
+
+I messaggi reali del compilatore sono:
+
+\begin{lstlisting}[style=output]
+declared and not used: x
+"os" imported and not used
+\end{lstlisting}
+
+Per le variabili di cui non interessa il valore (per esempio l'indice di un ciclo
+quando serve solo l'elemento) si usa il \textbf{blank identifier} \cod{\_}, che
+scarta il valore e soddisfa il compilatore (Sezione~\ref{sec:range}).
+
+Gli strumenti da riga di comando consigliati dalle slide sono:
+
+\begin{description}
+  \item[\texttt{gofmt}] formatta il codice Go secondo lo stile standard:
+        \cod{gofmt -w yourcode.go} riscrive il file formattato. Non esistono
+        «guerre di stile»: il formato è uno solo.
+  \item[\texttt{goimports}] aggiunge e rimuove automaticamente gli import
+        (utile proprio per evitare l'errore di import inutilizzato).
+  \item[\texttt{godoc}] permette di consultare la documentazione dei package.
+\end{description}
+
+\begin{nota}[Perché \texttt{gofmt} è importante]
+Tutti gli esempi di questa guida sono stati formattati con \cod{gofmt}. In Go
+l'indentazione con tabulazioni, la posizione delle graffe e lo spazio attorno
+agli operatori non sono questioni di gusto personale: è la forma canonica che
+gli editor applicano al salvataggio.
+\end{nota}
+
+% ===========================================================================
+\chapter{Variabili e tipi}\label{ch:tipi}
+% ===========================================================================
+
+\section{Dichiarare variabili}
+
+\subsection{Introduzione}
+
+Go offre due modi per dichiarare una variabile: l'istruzione \cod{var} e la
+\emph{dichiarazione breve} \cod{:=}. La prima si può usare sia a livello di
+package sia dentro le funzioni; la seconda solo dentro le funzioni.
+
+\subsection{Sintassi}
+
+\begin{itemize}
+  \item \cod{var} dichiara una o più variabili. Il \textbf{tipo viene per ultimo},
+        dopo il nome: \cod{var i int}.
+  \item È ammesso un \textbf{inizializzatore} per ciascuna variabile; se è
+        presente, il tipo si può omettere e viene dedotto: \cod{var a, b = 1, "due"}.
+  \item Una variabile dichiarata senza valore iniziale riceve il suo
+        \textbf{valore zero}.
+  \item La \textbf{dichiarazione breve} \cod{count := 10} dichiara e inizializza
+        deducendo il tipo; è consentita solo all'interno delle funzioni.
+\end{itemize}
+
+\begin{definizione}{valore zero}
+Ogni tipo di Go ha un \textbf{valore zero}, assegnato automaticamente a una
+variabile non inizializzata esplicitamente: \cod{0} per i numeri, \cod{false}
+per i booleani, la stringa vuota \cod{""} per le stringhe e \cod{nil} per
+puntatori e altri tipi riferimento.
+\end{definizione}
+
+\subsection{Esempio pratico}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{01\_basics/variables.go}}]
+// variables.go - Dichiarazione di variabili e valori zero (slide 17).
+package main
+
+import "fmt"
+
+// Variabili a livello di package: qui ":=" NON è ammesso, serve "var".
+// Il tipo segue il nome; tutte e tre ricevono il valore zero (false).
+var c, python, java bool
+
+func main() {
+	// Variabile locale senza inizializzatore: valore zero (0 per gli int).
+	var i int
+	fmt.Println(i, c, python, java)
+
+	// Con inizializzatori (uno per variabile) il tipo può essere omesso
+	// e viene dedotto dal valore a destra.
+	var a, b = 1, "due"
+	fmt.Println(a, b)
+
+	// Dichiarazione breve ":=" - solo dentro le funzioni.
+	count := 10
+	fmt.Println(count)
+
+	// Valori zero dei tipi base: nessuna variabile Go è "non inizializzata".
+	var (
+		n int
+		f float64
+		s string
+		t bool
+		p *int
+	)
+	fmt.Printf("int=%d float64=%g string=%q bool=%t pointer=%v\n", n, f, s, t, p)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+0 false false false
+1 due
+10
+int=0 float64=0 string="" bool=false pointer=<nil>
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+Le variabili \cod{c}, \cod{python} e \cod{java} sono dichiarate a livello di
+package con \cod{var} (qui \cod{:=} non sarebbe permesso). Un'unica
+dichiarazione, \cod{var c, python, java bool}, assegna il tipo \cod{bool} a tutte
+e tre; poiché nessuna ha un inizializzatore, valgono \cod{false}. Dentro
+\cod{main}, \cod{var i int} vale \cod{0}. L'ultima parte stampa i valori zero di
+tipi diversi (puntatore \cod{nil} compreso), dimostrando che \emph{in Go non
+esistono variabili non inizializzate}.
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} una variabile locale non inizializzata ha un valore
+\emph{indeterminato}: leggerla è un comportamento non definito e una classica
+fonte di bug. In \textbf{Java} i campi hanno un valore di default ma le variabili
+locali devono essere assegnate prima dell'uso (verificato dal compilatore). In
+\textbf{Python} non si dichiara nulla: il nome nasce con la prima assegnazione.
+In \textbf{Go} il valore zero è definito per tutti i tipi, quindi una variabile è
+sempre in uno stato valido. Per l'inferenza, \cod{:=} ricorda \cod{var} di Java
+(10+) per le variabili locali, ma in Go il tipo resta statico e fisso.
+\end{confronto}
+
+\begin{attenzione}[Errori comuni con \cod{:=} e \cod{var}]
+\begin{enumerate}
+  \item \textbf{Usare \cod{:=} fuori da una funzione.} A livello di package ogni
+        istruzione deve iniziare con una parola chiave di dichiarazione
+        (\cod{var}, \cod{func}, \ldots). Scrivere \cod{x := 3} fuori da una funzione
+        dà \texttt{syntax error: non-declaration statement outside function body}.
+  \item \textbf{Ridichiarare con \cod{:=}.} \cod{a := 1} seguito da \cod{a := 2}
+        nello stesso blocco dà \texttt{no new variables on left side of :=}:
+        \cod{:=} richiede almeno una variabile \emph{nuova}; per riassegnare si
+        usa \cod{=}.
+  \item \textbf{Variabili inutilizzate:} sono errori, non warning
+        (Sezione~\ref{sec:strumenti}).
+\end{enumerate}
+\end{attenzione}
+
+\section{Tipi di base, conversioni e inferenza}
+
+I tipi di base comprendono \cod{bool}, \cod{string}, \cod{int}, \cod{uint},
+\cod{float32}, \cod{float64} e altri.
+
+\begin{definizione}{conversione esplicita}
+Go richiede una \textbf{conversione esplicita} tra tipi diversi, anche
+numerici: \cod{var f float64 = float64(i)}. Non esiste alcuna promozione
+implicita (a differenza di C).
+\end{definizione}
+
+L'\textbf{inferenza di tipo} permette al compilatore di dedurre il tipo di una
+variabile dal valore a destra: se \cod{var i int} è già dichiarata, allora in
+\cod{j := i} la variabile \cod{j} è di tipo \cod{int}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{01\_basics/types.go}}]
+// types.go - Tipi base, conversioni esplicite e inferenza (slide 18).
+package main
+
+import "fmt"
+
+func main() {
+	// Tipi base.
+	var (
+		b  bool    = true
+		s  string  = "go"
+		i  int     = 42
+		u  uint    = 7
+		f2 float32 = 1.5
+		f6 float64 = 2.25
+	)
+	fmt.Println(b, s, i, u, f2, f6)
+
+	// Conversione esplicita: obbligatoria tra tipi diversi (a differenza
+	// di C, dove int -> double avviene implicitamente).
+	var n int = 42
+	var f float64 = float64(n)
+	fmt.Printf("%d -> %g\n", n, f)
+
+	// Inferenza: j ha lo stesso tipo di k (int).
+	var k int
+	j := k
+	fmt.Printf("tipo di j: %T\n", j)
+
+	// Il tipo dedotto da una costante letterale dipende dalla sua forma.
+	x := 3.14 // float64
+	y := 'a'  // rune (alias di int32)
+	fmt.Printf("%T %T\n", x, y)
+
+	// Non si può sommare int e float64 senza conversione:
+	//   fmt.Println(n + f)   // errore di compilazione: mismatched types
+	fmt.Println(float64(n) + f)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+true go 42 7 1.5 2.25
+42 -> 42
+tipo di j: int
+float64 int32
+84
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{float64(n)} converte il valore: omettere la conversione e scrivere
+        \cod{n + f} con \cod{n} di tipo \cod{int} e \cod{f} di tipo \cod{float64}
+        produce l'errore di compilazione
+        \texttt{invalid operation: n + f (mismatched types int and float64)}.
+  \item \cod{\%T} stampa il tipo dedotto: \cod{int} per \cod{j}, \cod{float64} per la
+        costante \cod{3.14} e \cod{int32} per \cod{'a'}.
+  \item In Go il letterale \cod{'a'} è una \emph{rune}, un alias di
+        \cod{int32} che rappresenta un punto di codice Unicode. Per questo
+        \cod{\%T} stampa \cod{int32}.
+\end{itemize}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} somme tra \cod{int} e \cod{double} funzionano grazie alle
+conversioni aritmetiche implicite; in \textbf{Java} sono implicite le conversioni
+\emph{di allargamento} (\cod{int}$\to$\cod{double}). In \textbf{Go} nessuna: la
+scelta evita perdite di precisione o di segno non volute, al prezzo di un
+\cod{float64(\ldots)} in più nel codice. In \textbf{Python} i tipi sono dinamici e
+\cod{1 + 2.5} funziona perché è l'interprete a decidere a runtime.
+\end{confronto}
+
+% ===========================================================================
+\chapter{Funzioni}\label{ch:funzioni}
+% ===========================================================================
+
+\section{Dichiarazione e parametri}
+
+Una funzione può avere zero o più argomenti, e anche in questo caso il
+\textbf{tipo segue il nome}: \cod{func add(x int, y int) int}. Quando più
+parametri consecutivi hanno lo stesso tipo si può abbreviare:
+\cod{func add(x, y int) int}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/functions.go}}]
+// functions.go - Funzioni: parametri, tipo dopo il nome, forma abbreviata
+// (slide 13).
+package main
+
+import "fmt"
+
+// Il tipo segue il nome del parametro; anche il tipo di ritorno è in coda.
+func add(x int, y int) int {
+	return x + y
+}
+
+// Forma abbreviata: parametri consecutivi dello stesso tipo.
+func addShort(x, y int) int {
+	return x + y
+}
+
+func main() {
+	fmt.Println(add(3, 4))
+	fmt.Println(addShort(10, 20))
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+7
+30
+\end{lstlisting}
+
+Il tipo di ritorno compare dopo la lista dei parametri. Go è
+\emph{call-by-value}: \cod{x} e \cod{y} sono copie degli argomenti (si veda la
+Sezione~\ref{sec:puntatori} per come modificare l'originale con un puntatore).
+
+\begin{confronto}{C, Python, Java}
+Chi viene da C o Java è abituato a \cod{int add(int x, int y)}, con il tipo
+\emph{prima} del nome. Go lo inverte (\cod{x int}) per due ragioni leggibili:
+le dichiarazioni si leggono da sinistra a destra («\cod{x} è un \cod{int}») e
+le forme complesse (puntatori a funzioni, slice di mappe, \ldots) restano
+leggibili. In Python le annotazioni di tipo seguono il nome (\cod{x: int}) ma sono
+facoltative e non verificate a runtime.
+\end{confronto}
+
+\section{Risultati multipli}
+
+Una funzione può restituire \textbf{un numero qualsiasi di risultati}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/swap.go}}]
+// swap.go - Una funzione può restituire più risultati (slide 13-14).
+package main
+
+import "fmt"
+
+func swap(x, y string) (string, string) {
+	return y, x
+}
+
+func main() {
+	// Assegnazione multipla: entrambi i risultati vengono "spacchettati".
+	a, b := swap("hello", "world")
+	fmt.Println(a, b)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+world hello
+\end{lstlisting}
+
+L'assegnazione multipla \cod{a, b := swap("hello", "world")} spacchetta i due
+valori restituiti. Il caso d'uso più importante è restituire un
+\textbf{risultato e un errore}: l'errore è per convenzione l'\emph{ultimo} valore
+restituito e \cod{nil} significa «nessun errore». La Sezione~\ref{sec:errori}
+approfondisce questo schema; qui lo si vede con \cod{os.ReadFile}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/result\_and\_error.go}}]
+// result_and_error.go - Convenzione risultato + errore (slide 13, 15).
+//
+// La slide usa os.ReadFile("example.txt"). Qui il file viene prima creato in
+// una directory temporanea, così l'esempio è autonomo e non dipende da file
+// preesistenti; poi si prova anche un file inesistente per mostrare il ramo
+// di errore. Il messaggio dell'errore dipende dal sistema operativo, quindi
+// qui viene stampato solo il fatto che l'errore sia avvenuto.
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+func readAndPrint(name string) {
+	data, err := os.ReadFile(name)
+	// Per convenzione l'errore è l'ultimo valore restituito e nil
+	// significa "nessun errore". Va controllato subito.
+	if err != nil {
+		fmt.Println("Error: lettura fallita, err != nil")
+		return
+	}
+	fmt.Println("File contents:", string(data))
+}
+
+func main() {
+	dir, err := os.MkdirTemp("", "goguide")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer os.RemoveAll(dir) // pulizia al termine di main
+
+	path := filepath.Join(dir, "example.txt")
+	if err := os.WriteFile(path, []byte("ciao dal file"), 0o644); err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	readAndPrint(path)                         // caso di successo
+	readAndPrint(filepath.Join(dir, "no.txt")) // caso di errore
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+File contents: ciao dal file
+Error: lettura fallita, err != nil
+\end{lstlisting}
+
+\begin{nota}[Differenza rispetto alla slide]
+La slide legge un file \texttt{example.txt} che si assume già esistente. Per
+rendere l'esempio autonomo e riproducibile, il file viene prima creato in una
+directory temporanea (con \cod{defer os.RemoveAll} per ripulirla), e
+viene provato anche un file inesistente per mostrare il ramo d'errore. La parte
+essenziale (\cod{data, err := os.ReadFile(...)} seguito da \cod{if err != nil})
+è quella della slide. Il testo esatto dell'errore dipende dal sistema operativo,
+quindi viene stampato un messaggio fisso.
+\end{nota}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} per restituire più valori si usano parametri di output
+(puntatori) o struct; in \textbf{Python} si restituisce una tupla (meccanismo
+simile a quello di Go); in \textbf{Java} servirebbe un oggetto contenitore.
+Go ha il supporto nativo ai risultati multipli, ed è la base della gestione
+degli errori (niente eccezioni).
+\end{confronto}
+
+\section{Valori di ritorno con nome}
+
+Go permette di dare un nome ai valori di ritorno nella firma. Le variabili con
+nome sono inizializzate al loro \textbf{valore zero} e un \cod{return} senza
+argomenti (\emph{«naked return»}) restituisce i loro valori correnti.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/named\_returns.go}}]
+// named_returns.go - Valori di ritorno con nome e "naked return" (slide 16).
+package main
+
+import "fmt"
+
+// x e y sono variabili locali dichiarate nella firma, inizializzate al
+// valore zero. Il "return" nudo restituisce i loro valori correnti.
+func split(sum int) (x, y int) {
+	x = sum * 4 / 9
+	y = sum - x
+	return // equivale a: return x, y
+}
+
+func main() {
+	fmt.Println(split(17))
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+7 10
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\cod{x} e \cod{y} sono variabili locali dichiarate nella firma
+\cod{(x, y int)}. Con \cod{sum = 17}: \cod{x = 17 * 4 / 9 = 7} (divisione
+intera) e \cod{y = 17 - 7 = 10}. Il \cod{return} nudo equivale a
+\cod{return x, y}. L'output \cod{7 10} è quello stampato da
+\cod{fmt.Println(split(17))}, in cui i due risultati diventano due argomenti.
+
+\begin{attenzione}[Osservazione: naked return e leggibilità]
+Il \emph{naked return} è comodo in funzioni brevi, ma in funzioni lunghe obbliga
+il lettore a risalire alla firma per sapere che cosa viene restituito. I nomi
+dei risultati hanno anche valore di documentazione: \cod{(x, y int)} dice più di
+\cod{(int, int)}.
+\end{attenzione}
+
+\section{Funzioni variadiche}
+
+Una \textbf{funzione variadica} accetta un numero variabile di argomenti.
+\cod{fmt.Println} ne è un esempio. Si dichiara con il suffisso
+\cod{...tipo} sull'ultimo parametro.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/variadic.go}}]
+// variadic.go - Funzioni variadiche (slide 68).
+package main
+
+import "fmt"
+
+// Dentro la funzione "nums" è una slice []int.
+func sum(nums ...int) {
+	fmt.Print(nums, " ")
+	total := 0
+	for _, num := range nums {
+		total += num
+	}
+	fmt.Println(total)
+}
+
+func main() {
+	sum(1, 2)
+	sum(1, 2, 3)
+
+	// Per passare una slice esistente si usa il suffisso "...".
+	nums := []int{1, 2, 3, 4}
+	sum(nums...)
+
+	// Zero argomenti: nums è una slice nil e il totale è 0.
+	sum()
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+[1 2] 3
+[1 2 3] 6
+[1 2 3 4] 10
+[] 0
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item All'interno della funzione, \cod{nums} è una \textbf{slice} \cod{[]int}
+        (Sezione~\ref{sec:slice}): si può iterare con \cod{range} e usare \cod{len}.
+  \item Per passare una slice già esistente come lista di argomenti si usa il
+        suffisso \cod{...} \emph{alla chiamata}: \cod{sum(nums...)}.
+  \item Chiamata senza argomenti: \cod{nums} è una slice \cod{nil}, quindi
+        stampa \cod{[]} e il totale è \cod{0}.
+\end{itemize}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} le funzioni variadiche usano \cod{stdarg.h} (\cod{va\_list}) e non
+c'è controllo di tipo; in \textbf{Java} la sintassi \cod{int... nums} è
+praticamente identica a quella di Go; in \textbf{Python} si usa \cod{*args}, e
+l'espansione \cod{sum(*nums)} corrisponde a \cod{sum(nums...)} in Go.
+\end{confronto}
+
+\section{Funzioni anonime e closure}
+
+Le funzioni Go possono essere \textbf{anonime}, cioè senza nome: si definiscono
+\emph{in linea} e si usano subito o si assegnano a una variabile.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/anonymous.go}}]
+// anonymous.go - Funzioni anonime (slide 37).
+package main
+
+import "fmt"
+
+func main() {
+	// Funzione anonima assegnata a una variabile.
+	f := func(x, y int) int {
+		return x + y
+	}
+	fmt.Println(f(3, 4)) // 7
+
+	// Funzione anonima definita e invocata subito: le parentesi finali
+	// () eseguono la chiamata.
+	func(msg string) {
+		fmt.Println("invocata subito:", msg)
+	}("ciao")
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+7
+invocata subito: ciao
+\end{lstlisting}
+
+\begin{definizione}{closure}
+Una \textbf{closure} è una funzione anonima annidata che \emph{cattura le
+variabili} dell'ambiente che la racchiude. Mantiene un proprio \textbf{stato
+privato}, indipendente da quello di altre istanze.
+\end{definizione}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/closure.go}}]
+// closure.go - Closure con stato privato (slide 38).
+package main
+
+import "fmt"
+
+// intSeq restituisce una funzione. La funzione anonima "cattura" la
+// variabile i dell'ambiente che la racchiude: i sopravvive alle
+// chiamate di intSeq ed è privata di quella particolare closure.
+func intSeq() func() int {
+	i := 0
+	return func() int {
+		i++
+		return i
+	}
+}
+
+func main() {
+	nextInt := intSeq()
+	fmt.Println(nextInt()) // 1
+	fmt.Println(nextInt()) // 2
+	fmt.Println(nextInt()) // 3
+
+	// Una nuova closure ha una propria copia indipendente di i.
+	newInts := intSeq()
+	fmt.Println(newInts()) // 1
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+1
+2
+3
+1
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\cod{intSeq()} dichiara \cod{i := 0} e restituisce una funzione anonima che
+incrementa e restituisce \cod{i}. Normalmente una variabile locale scompare quando
+la funzione ritorna; qui \cod{i} \emph{sopravvive} perché la closure lo
+referenzia (il runtime la sposta sullo heap, come per i puntatori a variabili
+locali, Sezione~\ref{sec:puntatori}). Ogni chiamata di \cod{intSeq()} crea una
+\emph{nuova} variabile \cod{i}: per questo \cod{newInts()} ricomincia da
+\cod{1} senza influenzare \cod{nextInt}.
+
+Un secondo esempio, elegante ed efficiente, genera i numeri di Fibonacci
+tenendo lo stato \cod{(x, y)} nella closure:
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/closure\_fib.go}}]
+// closure_fib.go - Fibonacci con una closure (slide 39).
+package main
+
+import "fmt"
+
+// fibonacci restituisce una funzione che, a ogni chiamata, restituisce
+// il numero di Fibonacci successivo. Lo stato (x, y) vive nella closure.
+func fibonacci() func() int {
+	x, y := 0, 1
+	return func() int {
+		// Assegnazione parallela: il lato destro è valutato per intero
+		// prima di assegnare, quindi non serve una variabile temporanea.
+		x, y = y, x+y
+		return x
+	}
+}
+
+func main() {
+	f := fibonacci()
+	for i := 0; i < 10; i++ {
+		fmt.Println(f())
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+1
+1
+2
+3
+5
+8
+13
+21
+34
+55
+\end{lstlisting}
+
+L'assegnazione parallela \cod{x, y = y, x+y} valuta \emph{prima} tutto il lato
+destro e poi assegna, quindi non serve una variabile temporanea. A ogni
+chiamata, \cod{x} avanza di un passo nella successione (1, 1, 2, 3, \ldots).
+
+\begin{confronto}{C, Python, Java}
+\textbf{C} non ha closure: si ottiene un effetto simile con un puntatore a
+funzione più un puntatore \cod{void*} al «contesto», gestito a mano. In
+\textbf{Python} le closure esistono (per \emph{modificare} una variabile
+catturata serve \cod{nonlocal}). In \textbf{Java} le lambda catturano solo
+variabili \emph{effectively final}: non possono modificarle, quindi serve di
+solito un oggetto contenitore (es.\ un array di un elemento o un
+\cod{AtomicInteger}). In \textbf{Go} la closure cattura la variabile stessa, non una
+copia del suo valore, e può modificarla liberamente.
+\end{confronto}
+
+\subsection{Closure come middleware}\label{sec:funzioni-middleware}
+
+Un impiego pratico delle closure è il \emph{middleware}: una closure può
+avvolgere una funzione \emph{handler} per eseguire logica prima e/o dopo di essa.
+La slide mostra \cod{timed}, che avvolge un handler HTTP per misurare il tempo
+di elaborazione di una richiesta; con un server vero si registrerebbe
+con \cod{http.HandleFunc("/hello", timed(hello))}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{02\_functions/middleware.go}}]
+// middleware.go - Closure come middleware (slide 40).
+//
+// La slide mostra timed(), che avvolge un handler HTTP per misurarne il tempo
+// di elaborazione. Per rendere l'esempio eseguibile senza aprire porte di
+// rete, la richiesta viene simulata con il package httptest.
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"time"
+)
+
+// timed riceve un handler e ne restituisce uno nuovo che esegue codice
+// "prima" e "dopo" la chiamata all'handler originale. f è catturato dalla
+// closure.
+func timed(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		f(w, r)
+		// Il tempo esatto cambia a ogni esecuzione: lo si arrotonda per
+		// rendere l'output (quasi sempre) stabile.
+		fmt.Println("The request took", time.Since(start).Round(50*time.Millisecond))
+	}
+}
+
+func hello(w http.ResponseWriter, r *http.Request) {
+	time.Sleep(100 * time.Millisecond) // lavoro simulato
+	fmt.Fprintln(w, "hello")
+}
+
+func main() {
+	// Con un server vero si scriverebbe: http.HandleFunc("/hello", timed(hello))
+	handler := timed(hello)
+
+	req := httptest.NewRequest("GET", "/hello", nil)
+	rec := httptest.NewRecorder()
+	handler(rec, req)
+
+	fmt.Print("risposta: ", rec.Body.String())
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+The request took 100ms
+risposta: hello
+\end{lstlisting}
+
+\begin{nota}[Come è stato reso eseguibile]
+La slide mostra solo \cod{timed}. Per verificarlo senza aprire una porta di rete,
+l'esempio simula la richiesta con il package \cod{httptest} della libreria standard.
+Il tempo viene arrotondato a multipli di 50\,ms per rendere l'output quasi
+sempre stabile; il valore esatto, essendo una misura di tempo, non è
+deterministico: l'handler dorme 100\,ms, quindi si legge circa \cod{100ms}.
+\end{nota}
+
+\subsection{Funzioni anonime e goroutine: una nota sulle variabili di ciclo}
+
+Le closure sono usate molto spesso nel codice concorrente (Capitolo~\ref{ch:conc}),
+dove una funzione anonima è lanciata come goroutine all'interno di un ciclo. Il
+punto delicato è se la closure veda una \emph{variabile di ciclo condivisa} da
+tutte le iterazioni oppure una nuova per ciascuna. Dal Go~1.22, ogni iterazione
+di un ciclo \cod{for i := \ldots} ha la propria copia di \cod{i}, quindi
+\cod{go func() \{ use(i) \}()} funziona come ci si aspetta; con versioni
+precedenti (o con \texttt{go.mod} che dichiara una versione anteriore) le closure
+condividevano un'unica \cod{i}, causando bug sottili. Gli esempi di questa guida
+dichiarano \cod{go 1.22} in \texttt{go.mod}.
+
+% ===========================================================================
+\chapter{Controllo di flusso}\label{ch:flusso}
+% ===========================================================================
+
+Le istruzioni di controllo del flusso di Go sono \cod{for}, \cod{if} (con
+\cod{else}), \cod{switch} e \cod{defer}. Hanno in comune due regole di stile
+che le distinguono da C e Java: \textbf{nessuna parentesi} attorno alle
+condizioni e \textbf{graffe sempre obbligatorie}, anche per un solo statement.
+
+\section{Il ciclo \texttt{for}}\label{sec:for}
+
+Go ha \textbf{un solo costrutto di ciclo}: \cod{for}. Nella sua forma completa ha
+tre componenti: l'istruzione \emph{init}, l'espressione \emph{condizione} e
+l'istruzione \emph{post}.
+
+\begin{lstlisting}[style=gocode,numbers=none,caption={Forma generale}]
+for init; condizione; post {
+	// corpo
+}
+\end{lstlisting}
+
+Le istruzioni \emph{init} e \emph{post} sono facoltative: se omesse, il
+\cod{for} diventa il «while» di Go. Se si omette anche la condizione, il ciclo è
+\textbf{infinito} (\cod{for \{ \}}).
+
+\begin{lstlisting}[style=gocode,caption={\texttt{03\_control\_flow/for\_loops.go}}]
+// for_loops.go - L'unico costrutto di ciclo di Go: for (slide 20-21).
+package main
+
+import "fmt"
+
+func main() {
+	// Forma completa: init; condizione; post. Niente parentesi attorno
+	// ai tre componenti, graffe sempre obbligatorie.
+	sum := 0
+	for i := 0; i < 10; i++ {
+		sum += i
+	}
+	fmt.Println("somma 0..9 =", sum)
+
+	// Senza init e post il for si comporta come un "while".
+	sum = 1
+	for sum < 1000 {
+		sum += sum
+	}
+	fmt.Println("primo valore >= 1000:", sum)
+
+	// Senza condizione il ciclo è infinito; si esce con break (o return).
+	n := 0
+	for {
+		n++
+		if n == 5 {
+			break
+		}
+	}
+	fmt.Println("uscito dal ciclo infinito con n =", n)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+somma 0..9 = 45
+primo valore >= 1000: 1024
+uscito dal ciclo infinito con n = 5
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item Il primo ciclo somma $0+1+\dots+9=45$.
+  \item Il secondo è un \emph{while}: \cod{sum} raddoppia a ogni iterazione
+        (1, 2, 4, \ldots) finché non raggiunge o supera 1000, cioè
+        $2^{10}=1024$.
+  \item Il terzo è infinito e viene interrotto con \cod{break} quando
+        \cod{n} vale 5.
+\end{itemize}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} e \textbf{Java} esistono \cod{for}, \cod{while} e \cod{do-while};
+in \textbf{Python} \cod{for \ldots\ in} e \cod{while}. Go li unifica in un solo
+\cod{for}. L'iterazione su una collezione si ottiene con la clausola
+\cod{range} (Sezione~\ref{sec:range}), che ricorda il \cod{for-in} di Python.
+\end{confronto}
+
+\subsection{Esempio: \texttt{echo}}
+
+Il programma \cod{echo} stampa gli argomenti della riga di comando.
+\cod{os.Args} è una \emph{slice} di stringhe (Sezione~\ref{sec:slice}); l'elemento
+di indice 0 è il nome del programma, quindi il ciclo parte da 1.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{03\_control\_flow/echo.go}}]
+// Echo prints its command-line arguments. (slide 22)
+//
+// Esecuzione: go run echo.go Hello Go World
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	// s e sep sono inizializzate implicitamente alla stringa vuota.
+	var s, sep string
+	// os.Args è una slice di stringhe; os.Args[0] è il nome del programma,
+	// quindi gli argomenti utili partono da 1.
+	for i := 1; i < len(os.Args); i++ {
+		// Al primo giro sep è "" (nessuno spazio iniziale); poi diventa " ".
+		s += sep + os.Args[i]
+		sep = " "
+	}
+	fmt.Println(s)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Hello Go World
+\end{lstlisting}
+
+Nell'esempio \cod{s} e \cod{sep} sono implicitamente inizializzate alla stringa
+vuota (valore zero). Al primo giro \cod{sep} è vuoto e non si inserisce
+alcuno spazio iniziale; dal secondo giro \cod{sep} vale \cod{" "}. Il comando
+eseguito è \cod{go run echo.go Hello Go World}.
+
+\section{Istruzioni condizionali: \texttt{if}}\label{sec:if}
+
+L'istruzione \cod{if} (con \cod{else}) ha forma simile a quella del \cod{for}:
+nessuna parentesi attorno alla condizione, graffe sempre richieste, e si possono
+concatenare più condizioni con \cod{if\ldots else if\ldots else}. Come nel
+\cod{for}, c'è un'istruzione \emph{opzionale} prima della condizione, separata
+da \cod{;}:
+
+\begin{lstlisting}[style=gocode,numbers=none,caption={Forma generale}]
+if istruzioneOpzionale1; espressioneBooleana1 {
+	blocco1
+} else if istruzioneOpzionale2; espressioneBooleana2 {
+	blocco2
+} else {
+	blocco3
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{03\_control\_flow/if\_else.go}}]
+// if_else.go - if con istruzione di inizializzazione (slide 23-24).
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+// pow restituisce x^n se è inferiore a limit, altrimenti stampa un
+// messaggio e restituisce limit.
+func pow(x, n, limit float64) float64 {
+	// v è dichiarata nell'istruzione iniziale dell'if: è visibile nel blocco
+	// if e nel relativo else, ma non dopo.
+	if v := math.Pow(x, n); v < limit {
+		return v
+	} else {
+		// Nota: "} else {" deve stare sulla stessa riga.
+		fmt.Printf("%g >= %g\n", v, limit)
+	}
+	// Qui "v" non esiste più (errore di compilazione se la si usasse).
+	return limit
+}
+
+func main() {
+	fmt.Println(pow(3, 2, 10), pow(3, 3, 20))
+
+	// Catena if / else if / else, ciascuno con la propria istruzione
+	// opzionale.
+	x := 7
+	if r := x % 2; r == 0 {
+		fmt.Println("pari")
+	} else if r == 1 {
+		fmt.Println("dispari")
+	} else {
+		fmt.Println("negativo e dispari")
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+27 >= 20
+9 20
+dispari
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item L'istruzione opzionale è usata spesso per una breve dichiarazione di
+        variabile. In \cod{if v := math.Pow(x, n); v < limit}, la variabile
+        \cod{v} esiste \emph{solo} nel blocco \cod{if} e nel relativo
+        \cod{else} (\emph{scope}): dopo l'\cod{if} non è più visibile.
+  \item \cod{pow(3, 2, 10)} calcola $3^2=9<10$ e restituisce 9. \cod{pow(3, 3,
+        20)} calcola $27\ge 20$: stampa \cod{27 >= 20} (messaggio del ramo
+        \cod{else}) e restituisce il limite, 20. Poiché gli argomenti di
+        \cod{Println} sono valutati prima, la riga \cod{27 >= 20} compare
+        \emph{prima} di \cod{9 20}.
+  \item L'\cod{else} deve stare sulla stessa riga della graffa di chiusura
+        (Sezione~\ref{sec:strumenti}).
+  \item L'ultimo blocco mostra una catena \cod{else if} con l'istruzione
+        \cod{r := x \% 2}.
+\end{itemize}
+
+\section{Istruzioni condizionali: \texttt{switch}}\label{sec:switch}
+
+L'istruzione \cod{switch} sceglie \emph{uno} tra molti casi da eseguire. I
+\cod{case} sono valutati dall'alto verso il basso e ci si ferma al primo che
+corrisponde.
+
+Le differenze rispetto a C sono sostanziali:
+
+\begin{itemize}
+  \item viene eseguito \textbf{solo il caso selezionato}, non tutti quelli
+        seguenti: il \cod{break} di C è fornito \emph{automaticamente};
+  \item i \cod{case} \textbf{non devono essere costanti};
+  \item i valori possono essere \textbf{di qualunque tipo}, non solo interi
+        (le slide usano stringhe).
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{03\_control\_flow/switch.go}}]
+// switch.go - switch senza fallthrough implicito (slide 25).
+package main
+
+import "fmt"
+
+func describe(day string) {
+	switch day {
+	case "Monday":
+		fmt.Println("Start of the week")
+	case "Friday":
+		fmt.Println("Almost weekend!")
+	case "Saturday", "Sunday": // più valori nello stesso case
+		fmt.Println("Weekend!")
+	default:
+		fmt.Println("Giorno qualunque")
+	}
+}
+
+func main() {
+	for _, d := range []string{"Monday", "Friday", "Sunday", "Wednesday"} {
+		describe(d)
+	}
+
+	// I case non devono essere costanti: possono essere espressioni.
+	// Senza espressione dopo "switch" equivale a "switch true": viene
+	// eseguito il primo case la cui condizione è vera.
+	n := 15
+	switch {
+	case n < 10:
+		fmt.Println("piccolo")
+	case n < 100:
+		fmt.Println("medio")
+	default:
+		fmt.Println("grande")
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Start of the week
+Almost weekend!
+Weekend!
+Giorno qualunque
+medio
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\cod{describe} confronta \cod{day} con le stringhe dei \cod{case}.
+\cod{case "Saturday", "Sunday"} raggruppa più valori nello stesso ramo.
+Per \cod{"Wednesday"} nessun caso corrisponde e viene eseguito \cod{default}.
+Nell'ultima parte, \cod{switch} \emph{senza espressione} equivale a
+\cod{switch true}: i \cod{case} sono condizioni booleane arbitrarie e viene
+eseguito il primo che risulta vero (qui \cod{n < 100} perché \cod{n} vale 15).
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} (e nel \cod{switch} classico di \textbf{Java}) senza \cod{break}
+l'esecuzione «cade» nel caso successivo: è una fonte tipica di errori. In
+\textbf{Go} il comportamento predefinito è l'opposto, quindi un caso non
+interferisce con il successivo. In C le etichette devono essere costanti
+intere; in Go possono essere espressioni di tipo arbitrario. In
+\textbf{Python} (3.10+) il costrutto equivalente è \cod{match}.
+\end{confronto}
+
+\section{L'istruzione \texttt{defer}}\label{sec:defer}
+
+\subsection{Introduzione}
+
+\cod{defer} \textbf{rinvia l'esecuzione} di una chiamata di funzione \emph{fino al
+momento in cui la funzione che la contiene ritorna}. Il problema che risolve è la
+pulizia delle risorse (chiusura di file e connessioni, rilascio di lock): si
+scrive l'azione di rilascio \emph{subito dopo} l'acquisizione, e il
+linguaggio garantisce che venga eseguita comunque la funzione termini
+(anche con un \cod{return} anticipato).
+
+\subsection{Funzionamento}
+
+\begin{itemize}
+  \item Gli \textbf{argomenti} della chiamata differita sono valutati
+        \emph{immediatamente}, ma la chiamata effettiva avviene solo
+        quando la funzione circostante è terminata.
+  \item Le chiamate differite sono impilate in uno \textbf{stack} ed eseguite in
+        ordine \textbf{LIFO}: l'ultima registrata è la prima eseguita.
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{03\_control\_flow/defer.go}}]
+// defer.go - Esecuzione differita (slide 26).
+package main
+
+import "fmt"
+
+func main() {
+	// La chiamata viene registrata ora (argomenti valutati ora) ma eseguita
+	// solo quando main sta per terminare.
+	defer fmt.Println("world")
+	fmt.Println("hello")
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+hello
+world
+\end{lstlisting}
+
+Il secondo esempio mostra le due proprietà contemporaneamente: l'ordine LIFO e la
+valutazione immediata degli argomenti.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{03\_control\_flow/defer\_lifo.go}}]
+// defer_lifo.go - Ordine LIFO e valutazione immediata degli argomenti
+// (slide 26).
+package main
+
+import "fmt"
+
+func countdown() {
+	// Le chiamate differite sono impilate: l'ultima registrata è la prima
+	// eseguita. Ogni defer cattura il valore corrente di i (argomento
+	// valutato subito).
+	for i := 1; i <= 3; i++ {
+		defer fmt.Println("defer", i)
+	}
+	fmt.Println("fine del corpo di countdown")
+}
+
+func main() {
+	x := 1
+	// L'argomento x viene valutato qui: la stampa mostrerà 1, non 2.
+	defer fmt.Println("x al momento del defer =", x)
+	x = 2
+	fmt.Println("x ora =", x)
+
+	countdown()
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+x ora = 2
+fine del corpo di countdown
+defer 3
+defer 2
+defer 1
+x al momento del defer = 1
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+Dentro \cod{countdown}, il ciclo registra tre chiamate differite, con
+\cod{i} uguale a 1, 2, 3 \emph{valutato al momento del defer}. Il corpo stampa
+«fine del corpo di countdown»; solo \emph{allo scadere della funzione} le
+chiamate sono eseguite in ordine inverso (3, 2, 1). In \cod{main}, il
+\cod{defer} che stampa \cod{x} è registrato quando \cod{x} vale 1; anche se poi
+\cod{x} diventa 2, la riga differita stampa 1, perché l'argomento era già stato
+valutato. Essendo la prima registrata in \cod{main}, è l'ultima a essere
+eseguita: compare in fondo all'output.
+
+\begin{confronto}{C, Python, Java}
+In \textbf{Java} la pulizia si fa con \cod{try}/\cod{finally} (o
+\cod{try-with-resources}), in \textbf{Python} con \cod{try}/\cod{finally} o
+\cod{with}. In \textbf{C} tipicamente con un'etichetta di \cod{goto cleanup}.
+\cod{defer} offre il vantaggio di mettere il rilascio vicino all'acquisizione
+senza annidare blocchi. Si noti che \cod{defer} si lega alla \emph{funzione}, non
+al blocco: in un ciclo, i defer si accumulano fino alla fine della funzione.
+\end{confronto}
+
+\begin{attenzione}[Errore comune: defer dentro un ciclo]
+Poiché \cod{defer} è eseguito solo all'uscita della \emph{funzione}, scrivere
+\cod{defer f.Close()} dentro un ciclo che apre molti file li tiene tutti aperti
+fino alla fine della funzione. In quei casi conviene racchiudere il corpo del
+ciclo in una funzione ausiliaria, in modo che il defer scatti a ogni iterazione.
+\end{attenzione}
+
+% ===========================================================================
+\chapter{Puntatori e strutture dati}\label{ch:dati}
+% ===========================================================================
+
+\section{Puntatori}\label{sec:puntatori}
+
+\subsection{Introduzione}
+
+\begin{definizione}{puntatore}
+Un \textbf{puntatore} è un valore che memorizza l'\emph{indirizzo} di una
+variabile. Gli operatori sono quelli usuali: \cod{\&} produce l'indirizzo di una
+variabile; \cod{*} \emph{dereferenzia}, cioè recupera il valore a cui il
+puntatore punta.
+\end{definizione}
+
+Poiché Go è \emph{call-by-value}, ogni argomento viene copiato: per
+permettere a una funzione di modificare una variabile del chiamante occorre
+passarne l'indirizzo.
+
+\subsection{Funzionamento e differenze rispetto a C}
+
+\begin{itemize}
+  \item \textbf{Nessuna aritmetica dei puntatori}: \cod{p++} o \cod{p+1} non
+        compilano (errore reale: \texttt{invalid operation: p++ (non-numeric type *int)}).
+        Questo elimina un'intera classe di errori di accesso alla memoria.
+  \item Il \textbf{valore zero} di un puntatore è \cod{nil}.
+  \item È \textbf{sicuro restituire l'indirizzo di una variabile locale}: il
+        runtime di Go fa sì che la variabile sopravviva alla funzione (se
+        \emph{«scappa»} dallo scope, viene allocata sullo \emph{heap} anziché
+        sullo stack).
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/pointers.go}}]
+// pointers.go - Puntatori (slide 27).
+package main
+
+import "fmt"
+
+// Go è call-by-value: la funzione riceve una copia del puntatore, che però
+// punta alla stessa variabile del chiamante.
+func incrementByValue(n int) { n++ }
+func incrementByPointer(n *int) {
+	*n++ // dereferenziazione: modifica la variabile originale
+}
+
+// È sicuro restituire l'indirizzo di una variabile locale: il runtime la
+// alloca sullo heap (escape) e il garbage collector la libera quando
+// nessuno la referenzia più. In C sarebbe un dangling pointer.
+func newCounter() *int {
+	c := 100
+	return &c
+}
+
+func main() {
+	var p *int
+	fmt.Println("valore zero del puntatore:", p) // <nil>
+
+	i := 1
+	p = &i          // p punta a i
+	fmt.Println(*p) // 1
+	*p = 2          // equivale a i = 2
+	fmt.Println(i)  // 2
+
+	incrementByValue(i)
+	fmt.Println("dopo incrementByValue:", i) // invariato
+	incrementByPointer(&i)
+	fmt.Println("dopo incrementByPointer:", i)
+
+	q := newCounter()
+	*q++
+	fmt.Println("contatore sullo heap:", *q)
+
+	// Nessuna aritmetica dei puntatori: p++ o p+1 non compilano.
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+valore zero del puntatore: <nil>
+1
+2
+dopo incrementByValue: 2
+dopo incrementByPointer: 3
+contatore sullo heap: 101
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{p = \&i} fa puntare \cod{p} a \cod{i}; \cod{*p = 2} equivale
+        a \cod{i = 2}.
+  \item \cod{incrementByValue(i)} riceve una \emph{copia} di \cod{i} e la
+        incrementa: il chiamante non vede alcun cambiamento (resta~2).
+        \cod{incrementByPointer(\&i)} riceve una copia del \emph{puntatore},
+        che però punta alla stessa variabile: \cod{*n++} la modifica (da 2 a 3).
+  \item \cod{newCounter} restituisce \cod{\&c} dove \cod{c} è locale: è lecito
+        perché \cod{c} viene portata sullo heap. In C lo stesso codice
+        restituirebbe un \emph{dangling pointer} verso un frame di stack
+        già distrutto.
+\end{itemize}
+
+\begin{attenzione}[Errore comune: dereferenziare un puntatore \cod{nil}]
+Un puntatore non inizializzato vale \cod{nil}; dereferenziarlo causa un
+\emph{panic} a runtime: \texttt{panic: runtime error: invalid memory address or
+nil pointer dereference}. Come in C, il controllo \cod{if p != nil} va fatto
+dove \cod{nil} è un valore possibile; a differenza di C il programma non prosegue
+con memoria corrotta ma si arresta in modo controllato.
+\end{attenzione}
+
+\begin{confronto}{C, Python, Java}
+Rispetto a \textbf{C}: stessa notazione \cod{\&} e \cod{*}, ma senza
+aritmetica e con garbage collector (niente \cod{free}). Rispetto a \textbf{Java}
+e \textbf{Python}, dove gli oggetti sono sempre referenziati implicitamente e
+la distinzione tra valore e riferimento è decisa dal tipo, in Go è
+\emph{il programmatore a scegliere}: un \cod{Vertex} passato per valore viene
+copiato, un \cod{*Vertex} no.
+\end{confronto}
+
+\section{Strutture dati aggregate}
+
+\subsection{Struct}
+
+Una \textbf{struct} è una collezione tipizzata di \emph{campi}, di dimensione
+fissa, con sintassi simile a quella del C. I campi si accedono con la notazione
+\cod{.}; si possono accedere anche tramite un puntatore a struct
+(\cod{p := \&v}), nel qual caso Go permette di scrivere \cod{p.X} al posto di
+\cod{(*p).X}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/structs.go}}]
+// structs.go - Struct (slide 28).
+package main
+
+import "fmt"
+
+type Vertex struct {
+	X int
+	Y int
+}
+
+func main() {
+	// Letterale con campi nominati; i campi omessi valgono zero.
+	v := Vertex{X: 1, Y: 2}
+	fmt.Println(v.X, v)
+
+	// Un puntatore a struct: Go consente p.X al posto di (*p).X.
+	p := &v
+	p.X = 10
+	fmt.Println(v.X) // 10: p punta a v
+
+	// Le struct sono valori: l'assegnazione copia tutti i campi.
+	w := v
+	w.Y = 99
+	fmt.Println(v, w) // v non cambia
+
+	var zero Vertex
+	fmt.Println(zero) // {0 0}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+1 {1 2}
+10
+{10 2} {10 99}
+{0 0}
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+\cod{Vertex\{X: 1, Y: 2\}} è un \emph{letterale composito} con campi nominati;
+quelli omessi valgono zero (\cod{\{0 0\}} per \cod{zero}). Dopo \cod{p := \&v}
+l'assegnazione \cod{p.X = 10} modifica \cod{v}, perché \cod{p} punta a essa. Al
+contrario \cod{w := v} \textbf{copia} tutti i campi: modificare \cod{w.Y} lascia
+\cod{v} invariata.
+
+\begin{confronto}{C, Python, Java}
+La struct di Go è simile a quella di \textbf{C}: un valore, copiato
+nelle assegnazioni. A differenza di una \emph{classe} Java o Python, la struct
+non è un riferimento, non ha ereditarietà e i metodi si associano
+separatamente (Capitolo~\ref{ch:oop}).
+\end{confronto}
+
+\subsection{Array}
+
+Un \textbf{array} \cod{[n]T} è un array di \cod{n} elementi di tipo \cod{T}, di
+\textbf{dimensione fissa} (non ridimensionabile). La lunghezza fa parte del tipo:
+\cod{[2]string} e \cod{[3]string} sono tipi \emph{diversi}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/arrays.go}}]
+// arrays.go - Array a dimensione fissa (slide 28).
+package main
+
+import "fmt"
+
+func main() {
+	// La lunghezza fa parte del tipo: [2]string e [3]string sono tipi
+	// diversi.
+	var a [2]string
+	a[0] = "Hello"
+	a[1] = "World"
+	fmt.Println(a[0], a[1])
+	fmt.Println(a)
+
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+	fmt.Println(primes, len(primes))
+
+	// Un array è un valore: l'assegnazione ne copia tutti gli elementi
+	// (diverso da C, dove un array decade in puntatore).
+	b := primes
+	b[0] = 99
+	fmt.Println(primes[0], b[0]) // 2 99
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Hello World
+[Hello World]
+[2 3 5 7 11 13] 6
+2 99
+\end{lstlisting}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} un array nelle espressioni «decade» in un puntatore al primo
+elemento: passarlo a una funzione non lo copia. In \textbf{Go} un array è un
+\emph{valore}: assegnarlo o passarlo copia tutti gli elementi (come mostra
+\cod{b := primes}). In \textbf{Java} gli array sono oggetti referenziati.
+Per questo in Go gli array si usano di rado direttamente: si usano le
+\emph{slice}.
+\end{confronto}
+
+\section{Slice}\label{sec:slice}
+
+\subsection{Introduzione}
+
+La \textbf{slice} è il tipo di dato più importante di Go e molto più flessibile
+dell'array. \cod{[]T} è una slice con elementi di tipo \cod{T}: una \emph{vista},
+di dimensione dinamica, su un \textbf{array sottostante}.
+
+\subsection{Creare una slice da un array}
+
+Si crea una slice \emph{affettando} un array (o un'altra slice) con due indici,
+\cod{s[i:j]}: il limite inferiore è \textbf{incluso}, quello superiore
+\textbf{escluso}. Una slice \emph{riferisce} una sezione dell'array: modificare un
+elemento della slice modifica l'elemento corrispondente dell'array.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/slices.go}}]
+// slices.go - Slice come vista su un array sottostante (slide 29-30).
+package main
+
+import "fmt"
+
+func main() {
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+
+	// s[i:j] include l'elemento i ed esclude j.
+	var s []int = primes[1:4]
+	fmt.Println(s, "len =", len(s), "cap =", cap(s)) // [3 5 7] len=3 cap=5
+
+	// La slice NON copia i dati: modificare s modifica l'array.
+	s[0] = 100
+	fmt.Println("array dopo s[0]=100:", primes)
+
+	// Due slice sulla stessa porzione si influenzano a vicenda.
+	t := primes[:2]
+	fmt.Println("t =", t) // [2 100]
+
+	// La capacità arriva fino alla fine dell'array sottostante.
+	u := s[:5]
+	fmt.Println(u, len(u), cap(u))
+
+	// Controllo dei limiti a runtime: fuori dalla capacità -> panic.
+	defer func() {
+		fmt.Println("recuperato:", recover())
+	}()
+	_ = s[:6] // slice bounds out of range
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+[3 5 7] len = 3 cap = 5
+array dopo s[0]=100: [2 100 5 7 11 13]
+t = [2 100]
+[100 5 7 11 13] 5 5
+recuperato: runtime error: slice bounds out of range [:6] with capacity 5
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{primes[1:4]} contiene gli indici 1, 2, 3, cioè \cod{[3 5 7]}
+        (come nella slide): \cod{len = 3}, \cod{cap = 5}.
+  \item \cod{s[0] = 100} modifica \cod{primes[1]}: la slice non contiene una
+        copia dei dati. La slice \cod{t := primes[:2]}, definita dopo,
+        vede il nuovo valore (\cod{[2 100]}).
+  \item \cod{s[:5]} è consentito perché la \emph{capacità} di \cod{s} è 5
+        (fino alla fine dell'array sottostante), anche se la lunghezza è 3.
+  \item \cod{s[:6]} eccede la capacità: Go controlla i limiti e causa un
+        panic, qui intercettato con \cod{recover} dentro un \cod{defer}
+        solo per mostrare il messaggio
+        \texttt{slice bounds out of range [:6] with capacity 5}.
+\end{itemize}
+
+\begin{nota}[Come è fatta una slice]
+Una slice è un piccolo descrittore con tre campi: un \textbf{puntatore}
+all'array sottostante, la \textbf{lunghezza} (\cod{len}) e la \textbf{capacità}
+(\cod{cap}). Copiare una slice copia questo descrittore, non gli elementi. Ecco
+perché due slice sullo stesso array si influenzano a vicenda e perché passare una
+slice a una funzione è economico.
+\end{nota}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{Python} \cod{a[1:4]} crea una \emph{copia} della sezione; in Go la
+slice \emph{condivide} la memoria. In \textbf{Java} il costrutto più simile a
+una slice è la vista \cod{List.subList}, mentre un \cod{ArrayList} somiglia alla
+slice per la crescita dinamica. In \textbf{C} si ottiene qualcosa di simile con la
+coppia (puntatore, lunghezza), ma a mano e senza controlli.
+\end{confronto}
+
+\subsection{Lunghezza, capacità e \texttt{make}}
+
+Una slice ha sia una \textbf{lunghezza} sia una \textbf{capacità}.
+\cod{len(s)} è il numero di elementi che contiene; \cod{cap(s)} è il numero di
+elementi dell'array sottostante a partire dall'inizio della slice. Go
+effettua il \emph{bounds checking}: l'accesso fuori dai limiti causa un errore di
+compilazione (se riconoscibile staticamente) o di runtime.
+
+Una slice si può creare anche con \cod{make}, che permette di specificare
+lunghezza e (facoltativamente) capacità: \cod{s := make([]int, 5, 10)}. L'array
+sottostante viene creato automaticamente, ma non è direttamente visibile.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/making\_slice.go}}]
+// making_slice.go - Creare slice con make (slide 30-31).
+package main
+
+import "fmt"
+
+func main() {
+	a := make([]int, 0, 5) // len(s)=0, cap(s)=5
+	printSlice("a", a)
+
+	b := make([]int, 5) // len=5, cap=5: cinque zeri
+	printSlice("b", b)
+
+	c := make([]int, 5, 10)
+	printSlice("c", c)
+
+	d := c[2:4] // len=2, cap=8 (si parte dall'indice 2 dell'array)
+	printSlice("d", d)
+
+	var nilSlice []int // slice nil: len=0, cap=0, ma utilizzabile con append
+	printSlice("nil", nilSlice)
+	fmt.Println("nilSlice == nil?", nilSlice == nil)
+}
+
+func printSlice(s string, x []int) {
+	fmt.Printf("%s len=%d cap=%d %v\n", s, len(x), cap(x), x)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+a len=0 cap=5 []
+b len=5 cap=5 [0 0 0 0 0]
+c len=5 cap=10 [0 0 0 0 0]
+d len=2 cap=8 [0 0]
+nil len=0 cap=0 []
+nilSlice == nil? true
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+\cod{make([]int, 0, 5)} crea una slice vuota (\cod{len=0}) con spazio per 5
+elementi (\cod{cap=5}): è il primo output, identico a quello della slide
+(\cod{a len=0 cap=5 []}). Con \cod{make([]int, 5)} la capacità coincide con la
+lunghezza e gli elementi sono cinque zeri. \cod{d := c[2:4]} ha \cod{len=2} e
+\cod{cap=8}: la capacità si conta dall'inizio della slice (indice~2) fino alla
+fine dell'array (10). Infine una slice dichiarata e non inizializzata è
+\cod{nil}: ha \cod{len=0}, \cod{cap=0} ed è comunque utilizzabile con
+\cod{append}.
+
+\begin{attenzione}[Errore comune: confondere array e slice]
+\cod{[3]int} è un array (tipo con lunghezza, \emph{valore}); \cod{[]int}
+è una slice (tipo senza lunghezza, \emph{vista}). Un array assegnato si copia,
+una slice assegnata condivide l'array sottostante. Un indice costante fuori
+limite su un array è rifiutato dal compilatore (\texttt{invalid argument: index 5
+out of bounds [0:3]}), mentre un indice variabile fuori limite dà un panic a
+runtime (\texttt{index out of range [5] with length 3}).
+\end{attenzione}
+
+\subsection{L'operazione \texttt{append}}
+
+Si aggiungono elementi a una slice con \cod{append}, la cui firma concettuale è
+\cod{func append(slice []T, elems ...T) []T}. Quando si aggiunge a una slice, la
+slice \emph{può essere ingrandita} se necessario.
+
+\begin{itemize}
+  \item Se \cod{len(s) < cap(s)}: i nuovi elementi sono aggiunti
+        all'\textbf{array sottostante esistente}, senza crearne uno nuovo.
+  \item Se \cod{len(s) == cap(s)}: Go \textbf{alloca un nuovo array più grande}
+        (di norma il doppio della capacità precedente), \textbf{copia} gli
+        elementi esistenti, e \textbf{restituisce una slice} che punta al nuovo
+        array. Il vecchio array resta invariato se altre slice vi puntano ancora.
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/append.go}}]
+// append.go - append e crescita della capacità (slide 32-33).
+package main
+
+import "fmt"
+
+func main() {
+	var s []int
+	printSlice(s)
+
+	s = append(s, 0) // funziona su slice nil
+	printSlice(s)
+
+	s = append(s, 1) // la slice cresce quando serve
+	printSlice(s)
+
+	s = append(s, 2, 3, 4) // più elementi in una volta
+	printSlice(s)
+
+	// Capacità piena: viene allocato un nuovo array e gli elementi sono
+	// copiati.
+	t := make([]int, 3, 3)
+	t = append(t, 4)
+	fmt.Println(t) // [0 0 0 4]
+	printSlice(t)
+
+	// Capacità disponibile: nessuna nuova allocazione, e l'array
+	// sottostante è condiviso.
+	base := make([]int, 3, 10)
+	x := append(base, 1)
+	y := append(base, 2)    // sovrascrive la stessa posizione di x!
+	fmt.Println(x[3], y[3]) // 2 2
+}
+
+func printSlice(s []int) {
+	fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+len=0 cap=0 []
+len=1 cap=1 [0]
+len=2 cap=2 [0 1]
+len=5 cap=6 [0 1 2 3 4]
+[0 0 0 4]
+len=4 cap=6 [0 0 0 4]
+2 2
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{append} funziona anche su una slice \cod{nil}, come mostrano le
+        prime righe.
+  \item \cod{s = append(s, 2, 3, 4)} aggiunge tre elementi in una chiamata.
+        Dopo l'aggiunta la lunghezza è 5, ma la capacità è \textbf{6}, non 5.
+        La slide parla di «di norma il doppio»; la regola esatta è
+        un dettaglio dell'implementazione: il runtime calcola la nuova
+        capacità e poi la \emph{arrotonda} alla dimensione dei blocchi
+        che l'allocatore fornisce. Per questo il valore osservato (6) può non
+        coincidere con una semplice regola «raddoppia»: qui servivano 5
+        posti, più del doppio della capacità precedente (2$\times$2), e l'arrotondamento
+        ha portato a 6. Ciò che resta valido è la proprietà qualitativa: la
+        capacità cresce a salti, non a ogni elemento, e ogni salto copia
+        l'array. La regola esatta è un dettaglio dell'implementazione e non va
+        data per scontata.
+  \item Il caso della slide, \cod{make([]int, 3, 3)} seguito da
+        \cod{append(s, 4)}, dà \cod{[0 0 0 4]}: la capacità era piena, quindi è
+        stato creato un nuovo array.
+  \item Nell'ultimo blocco, \cod{base} ha capacità 10 e lunghezza 3: entrambe le
+        chiamate \cod{append(base, \ldots)} scrivono nella \emph{stessa} posizione
+        dell'array condiviso (indice 3), quindi \cod{x[3]} e \cod{y[3]} valgono
+        entrambi 2 --- la seconda chiamata ha sovrascritto la prima.
+\end{itemize}
+
+\begin{attenzione}[Errore comune: dimenticare di assegnare il risultato di \cod{append}]
+\cod{append} può restituire una slice che punta a un array \emph{nuovo}, quindi il
+risultato \textbf{va sempre riassegnato}. Scrivere \cod{append(s, 4)} senza
+riassegnare è rifiutato dal compilatore (\texttt{append(s, 2) (value of type
+[]int) is not used}). Un errore più subdolo si ha passando la slice a una
+funzione che fa \cod{append}: la funzione riceve una \emph{copia} del
+descrittore, quindi il chiamante non vede né la nuova lunghezza né il nuovo
+array.
+\end{attenzione}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/slice\_pitfalls.go}}]
+// slice_pitfalls.go - Errori comuni con array e slice.
+package main
+
+import "fmt"
+
+// Errato: append può restituire una slice con un nuovo array; il
+// risultato va riassegnato. Qui la modifica si perde per il chiamante,
+// perché s è una copia dell'header (puntatore, len, cap).
+func addWrong(s []int) {
+	s = append(s, 99)
+}
+
+// Corretto: restituire la slice aggiornata.
+func addRight(s []int) []int {
+	return append(s, 99)
+}
+
+func main() {
+	s := []int{1, 2, 3}
+	addWrong(s)
+	fmt.Println("dopo addWrong:", s) // [1 2 3]
+	s = addRight(s)
+	fmt.Println("dopo addRight:", s) // [1 2 3 99]
+
+	// append senza riassegnare: il compilatore stesso lo rifiuta
+	// ("append(s, 4) (value of type []int) is not used"). Va scritto
+	// s = append(s, 4).
+
+	// Una funzione può però modificare gli ELEMENTI esistenti, perché la
+	// slice condivide l'array sottostante.
+	double(s)
+	fmt.Println("dopo double:", s)
+
+	// Array e slice sono diversi: l'array si copia per valore.
+	arr := [3]int{1, 2, 3}
+	arrCopy := arr
+	arrCopy[0] = 100
+	fmt.Println(arr, arrCopy)
+}
+
+func double(s []int) {
+	for i := range s {
+		s[i] *= 2
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+dopo addWrong: [1 2 3]
+dopo addRight: [1 2 3 99]
+dopo double: [2 4 6 198]
+[1 2 3] [100 2 3]
+\end{lstlisting}
+
+\subsubsection*{Perché avviene}
+
+\cod{addWrong} riceve una copia di \cod{(puntatore, len, cap)} e ne aggiorna la
+\emph{copia}: la \cod{len} del chiamante resta 3. \cod{addRight} restituisce la
+slice aggiornata, che il chiamante riassegna. La funzione \cod{double} mostra
+invece che modificare gli \emph{elementi} funziona, perché tutte le copie del
+descrittore puntano allo stesso array.
+
+\section{Map}\label{sec:map}
+
+\subsection{Introduzione e funzionamento}
+
+Una \textbf{map} è una collezione di coppie chiave--valore. Il tipo
+\cod{map[K]V} è un \emph{riferimento} a una tabella hash in cui \cod{K} e
+\cod{V} sono i tipi di chiavi e valori. Si crea con \cod{make}:
+\cod{m = make(map[string]Vertex)}.
+
+Le operazioni principali sono:
+
+\begin{lstlisting}[style=gocode,numbers=none]
+m[key] = element      // inserimento o aggiornamento
+elem := m[key]        // lettura
+delete(m, key)        // cancellazione
+elem, ok = m[key]     // test: ok è true se la chiave esiste
+\end{lstlisting}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/maps.go}}]
+// maps.go - Map: tabelle hash chiave-valore (slide 34).
+package main
+
+import "fmt"
+
+type Vertex struct {
+	Lat, Long float64
+}
+
+func main() {
+	// Una map va creata con make (o con un letterale): la map nil
+	// permette letture ma non scritture.
+	m := make(map[string]Vertex)
+	m["Bell Labs"] = Vertex{40.68433, -74.39967} // inserimento
+	fmt.Println(m["Bell Labs"])                  // lettura
+
+	m["Bell Labs"] = Vertex{1, 2} // aggiornamento
+	fmt.Println(m)
+
+	// Chiave inesistente: si ottiene il valore zero, senza errore.
+	fmt.Println("chiave assente:", m["Google"])
+
+	// Idioma "comma ok": distingue "assente" da "presente con valore zero".
+	elem, ok := m["Google"]
+	fmt.Println(elem, ok) // {0 0} false
+	elem, ok = m["Bell Labs"]
+	fmt.Println(elem, ok) // {1 2} true
+
+	delete(m, "Bell Labs") // cancellazione (nessun errore se assente)
+	fmt.Println(len(m))
+
+	// Errore comune: scrivere su una map nil provoca panic.
+	var nilMap map[string]int
+	fmt.Println(nilMap["x"]) // lettura ok: 0
+	defer func() { fmt.Println("recuperato:", recover()) }()
+	nilMap["x"] = 1 // panic: assignment to entry in nil map
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+{40.68433 -74.39967}
+map[Bell Labs:{1 2}]
+chiave assente: {0 0}
+{0 0} false
+{1 2} true
+0
+0
+recuperato: assignment to entry in nil map
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item Leggere una chiave \emph{inesistente} \textbf{non è un errore}: si ottiene il
+        \emph{valore zero} del tipo dei valori (qui \cod{\{0 0\}}).
+  \item Per distinguere «chiave assente» da «chiave presente con valore zero» si
+        usa l'idioma \emph{comma ok}: \cod{elem, ok := m[key]}.
+  \item \cod{delete} su una chiave assente non fa nulla.
+  \item Scrivere su una map \cod{nil} causa un panic
+        (\texttt{assignment to entry in nil map}); la lettura da una map \cod{nil}
+        è invece lecita e restituisce il valore zero.
+\end{itemize}
+
+\begin{attenzione}[Errore comune: accesso a una chiave inesistente]
+Poiché la lettura di una chiave assente restituisce silenziosamente il valore
+zero, un contatore \cod{m["x"]} sembra funzionare ma una mappa di booleani
+non distingue «falso» da «assente»: serve \cod{v, ok := m[k]}. Ricordare inoltre di
+\emph{creare} la map con \cod{make} (o con un letterale) prima di scrivere.
+\end{attenzione}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{Python} una chiave assente solleva \cod{KeyError} (o si usa
+\cod{.get}); in \textbf{Java} \cod{HashMap.get} restituisce \cod{null}; in
+\textbf{Go} si ottiene il valore zero e si usa \cod{ok} per sapere se la chiave
+c'era. In \textbf{C} non esiste una map nella libreria standard. Una differenza
+da non trascurare: l'ordine di iterazione di una map Go \emph{non è
+specificato} (è anzi deliberatamente casuale), mentre un \cod{dict} Python
+mantiene l'ordine di inserimento.
+\end{confronto}
+
+\section{L'istruzione \texttt{range}}\label{sec:range}
+
+\cod{range} itera sugli elementi di varie strutture dati (array, slice,
+stringhe, map e channel); il comportamento \emph{dipende dal tipo}:
+
+\begin{itemize}
+  \item array, slice, stringhe: \cod{range} fornisce \textbf{indice e valore} di
+        ogni elemento;
+  \item map: fornisce \textbf{chiave e valore};
+  \item channel: fornisce i valori ricevuti finché il channel non è chiuso
+        (Sezione~\ref{sec:chanrange}).
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/range.go}}]
+// range.go - Iterare con range su una slice (slide 35).
+package main
+
+import "fmt"
+
+var pow = []int{1, 2, 4, 8, 16, 32, 64, 128}
+
+func main() {
+	// Per array e slice, range produce indice e copia del valore.
+	for i, v := range pow {
+		fmt.Printf("2**%d = %d\n", i, v)
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+2**0 = 1
+2**1 = 2
+2**2 = 4
+2**3 = 8
+2**4 = 16
+2**5 = 32
+2**6 = 64
+2**7 = 128
+\end{lstlisting}
+
+L'esempio successivo mostra come \textbf{ignorare} l'indice o il valore con il
+\emph{blank identifier} \cod{\_}, e come iterare su una map.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{04\_data\_structures/range2.go}}]
+// range2.go - range: ignorare indice o valore, iterare su map (slide 36).
+package main
+
+import "fmt"
+
+func main() {
+	nums := []int{2, 3, 4}
+	sum := 0
+	// "_" (blank identifier) scarta l'indice: Go vieta variabili inutilizzate.
+	for _, num := range nums {
+		sum += num
+	}
+	fmt.Println("sum:", sum)
+
+	for i, num := range nums {
+		if num == 3 {
+			fmt.Println("index:", i)
+		}
+	}
+
+	// Su una map range produce chiave e valore. L'ordine di iterazione NON
+	// è specificato (in Go è volutamente casuale): un ciclo diretto
+	// "for k, v := range kvs" stampa le due coppie in ordine variabile.
+	// Per avere un output stabile si itera su un elenco di chiavi
+	// ordinato a mano e si consulta la map.
+	kvs := map[string]string{"a": "apple", "b": "banana"}
+	for _, k := range []string{"a", "b"} {
+		fmt.Printf("%s -> %s\n", k, kvs[k])
+	}
+
+	// Con la sola chiave si omette il secondo valore.
+	n := 0
+	for k := range kvs {
+		_ = k
+		n++
+	}
+	fmt.Println("chiavi iterate:", n)
+
+	// Anche le stringhe: range restituisce indice di byte e rune (Unicode).
+	for i, r := range "gò" {
+		fmt.Printf("%d:%c ", i, r)
+	}
+	fmt.Println()
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+sum: 9
+index: 1
+a -> apple
+b -> banana
+chiavi iterate: 2
+0:g 1:ò 
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{for \_, num := range nums} scarta l'indice; Go vieta le variabili
+        dichiarate e inutilizzate, quindi \cod{\_} è la forma corretta per
+        dire «non mi serve».
+  \item \cod{for k := range kvs} itera sulle sole chiavi (valore omesso).
+  \item \textbf{Ordine delle map:} la slide mostra l'output
+        \cod{a -> apple}, \cod{b -> banana}; ma con un ciclo
+        \cod{for k, v := range kvs} diretto le due coppie possono comparire in
+        \emph{qualunque ordine}, anche diverso da un'esecuzione all'altra. Per questo
+        l'esempio della guida scorre un elenco di chiavi ordinato a mano
+        e consulta la map: l'output è deterministico.
+  \item Su una stringa \cod{range} restituisce la posizione in \emph{byte} e la
+        \emph{rune} (punto di codice Unicode): per \cod{"gò"} gli indici sono 0 e
+        1 e il carattere \cod{ò} occupa due byte UTF-8.
+\end{itemize}
+
+% ===========================================================================
+\chapter{Metodi, interfacce ed errori}\label{ch:oop}
+% ===========================================================================
+
+Go \textbf{non ha classi}. Il comportamento si associa ai tipi con i
+\emph{metodi}, e le astrazioni si esprimono con le \emph{interfacce}, che
+descrivono ciò che un tipo \emph{sa fare} e non ciò che \emph{contiene}.
+
+\section{Metodi}
+
+\subsection{Introduzione e sintassi}
+
+Go supporta i \textbf{metodi} sui tipi concreti, comprese le struct.
+
+\begin{definizione}{metodo e receiver}
+Un \textbf{metodo} è una funzione con un argomento speciale, il \emph{receiver}
+(ricevitore): un parametro aggiuntivo scritto \emph{tra} la parola chiave
+\cod{func} e il nome del metodo. Associa la funzione a un tipo specifico
+(per esempio una struct) e permette di definire il comportamento del tipo.
+\end{definizione}
+
+\begin{lstlisting}[style=gocode,numbers=none,caption={Dalla slide: un metodo \cod{Abs} su \cod{Vertex}}]
+type Vertex struct {
+	X, Y float64
+}
+
+func (v Vertex) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+\end{lstlisting}
+
+\subsection{Funzionamento: receiver per valore e per puntatore}
+
+Il receiver è, a tutti gli effetti, un \emph{parametro}: poiché Go passa tutto
+\emph{per valore} (Capitolo~\ref{ch:funzioni}), un receiver di tipo \cod{Vertex}
+riceve una \textbf{copia} della struct. Se invece il receiver è un puntatore
+(\cod{v *Vertex}) il metodo lavora sull'originale e può modificarlo. Le slide
+usano la forma a puntatore negli esempi sul \emph{mutex} (\cod{func (l *Lock)
+Lock()}, Capitolo~\ref{ch:conc}), dove è indispensabile.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{05\_methods\_interfaces/methods.go}}]
+// methods.go - Metodi su tipi concreti (slide 41).
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+type Vertex struct {
+	X, Y float64
+}
+
+// Un metodo è una funzione con un receiver, scritto tra "func" e il nome.
+// Con receiver per valore (v Vertex) il metodo lavora su una COPIA.
+func (v Vertex) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
+// Con receiver puntatore (v *Vertex) il metodo può modificare l'originale.
+func (v *Vertex) Scale(f float64) {
+	v.X *= f
+	v.Y *= f
+}
+
+// Errore comune: receiver per valore, la modifica agisce sulla copia
+// e va persa.
+func (v Vertex) ScaleWrong(f float64) {
+	v.X *= f
+	v.Y *= f
+}
+
+func main() {
+	v := Vertex{3, 4}
+	fmt.Println(v.Abs()) // 5
+
+	v.ScaleWrong(10)
+	fmt.Println("dopo ScaleWrong:", v) // invariato
+
+	// v è una variabile indirizzabile: Go traduce v.Scale(10) in
+	// (&v).Scale(10).
+	v.Scale(10)
+	fmt.Println("dopo Scale:", v, v.Abs())
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+5
+dopo ScaleWrong: {3 4}
+dopo Scale: {30 40} 50
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\cod{Abs} usa un receiver per valore: legge \cod{X} e \cod{Y} senza modificarli
+e restituisce $\sqrt{3^2+4^2}=5$. \cod{ScaleWrong} ha lo stesso receiver per
+valore ma tenta di modificare i campi: poiché agisce su una copia, \cod{v} nel
+\cod{main} rimane \cod{\{3 4\}}. \cod{Scale}, con receiver \cod{*Vertex},
+modifica l'originale: dopo \cod{v.Scale(10)} il vettore vale \cod{\{30 40\}} e
+\cod{Abs()} dà 50. Si noti che nel \cod{main} si scrive semplicemente
+\cod{v.Scale(10)}: poiché \cod{v} è una variabile, Go la traduce
+automaticamente in \cod{(\&v).Scale(10)}.
+
+\begin{attenzione}[Errore comune: modificare con un receiver per valore]
+Dimenticare l'asterisco nel receiver di un metodo che deve cambiare lo stato è
+un errore classico, spesso silenzioso: il codice compila e funziona, ma le
+modifiche vanno perse con la copia. La regola pratica: se il metodo deve
+\emph{modificare} il valore, serve un receiver puntatore.
+\end{attenzione}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{Java} e \textbf{Python} un metodo riceve il riferimento all'oggetto
+(\cod{this}/\cod{self}) e può sempre modificarne lo stato. In \textbf{Go} la
+scelta tra receiver per valore e per puntatore è esplicita e cambia la
+semantica. Rispetto a \textbf{C}, un metodo Go è «zucchero sintattico» per una
+funzione che prende la struct come primo parametro: \cod{v.Abs()} corrisponde
+grosso modo a \cod{Vertex\_Abs(v)}. Il receiver è dichiarato \emph{fuori} dalla
+definizione del tipo: i metodi non vivono dentro un blocco \cod{class}.
+\end{confronto}
+
+\section{Interfacce}\label{sec:interfacce}
+
+\subsection{Introduzione}
+
+\begin{definizione}{interfaccia}
+Un'\textbf{interfaccia} è una collezione \emph{nominata} di firme di metodi.
+\end{definizione}
+
+Il punto più importante è l'\textbf{implementazione implicita}: in Go un tipo
+\emph{soddisfa} un'interfaccia semplicemente implementandone \emph{tutti} i
+metodi. Non serve alcuna dichiarazione esplicita (nessun \cod{implements}): il
+tipo soddisfa automaticamente l'interfaccia.
+
+L'obiettivo è progettare astrazioni basate sul \textbf{comportamento} (le
+azioni) e non sui dati. Le interfacce abilitano il \textbf{polimorfismo} in Go.
+
+\subsection{Esempio pratico: le forme geometriche}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{05\_methods\_interfaces/interface.go}}]
+// interface.go - Interfacce implicite e polimorfismo (slide 42-45).
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+// Define the interface for geometric shapes
+type geometry interface {
+	area() float64
+	perim() float64
+}
+
+// Implement the interface on rectangular and circle types
+type rect struct {
+	width, height float64
+}
+type circle struct {
+	radius float64
+}
+
+// Per implementare un'interfaccia in Go basta implementare tutti i suoi
+// metodi: nessuna dichiarazione "implements".
+
+// Implement area and perim methods on rect
+func (r rect) area() float64 {
+	return r.width * r.height
+}
+func (r rect) perim() float64 {
+	return 2*r.width + 2*r.height
+}
+
+// Implement area and perim methods on circle
+func (c circle) area() float64 {
+	return math.Pi * c.radius * c.radius
+}
+func (c circle) perim() float64 {
+	return 2 * math.Pi * c.radius
+}
+
+// Se una variabile ha tipo interfaccia si possono chiamare i metodi
+// dell'interfaccia: measure funziona con qualsiasi tipo che implementi
+// geometry.
+func measure(g geometry) {
+	fmt.Println(g)
+	fmt.Println(g.area())
+	fmt.Println(g.perim())
+}
+
+func main() {
+	r := rect{width: 3, height: 4}
+	c := circle{radius: 5}
+
+	// rect e circle soddisfano entrambe geometry, quindi possono essere
+	// passate a measure.
+	measure(r)
+	measure(c)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+{3 4}
+12
+14
+{5}
+78.53981633974483
+31.41592653589793
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{geometry} dichiara due metodi: \cod{area()} e \cod{perim()}.
+  \item \cod{rect} e \cod{circle} sono struct che definiscono entrambi i
+        metodi con i giusti receiver: \emph{nient'altro} le collega a
+        \cod{geometry}.
+  \item \cod{measure(g geometry)} accetta qualunque tipo che implementi
+        \cod{geometry}; dentro la funzione si possono chiamare solo i metodi
+        dell'interfaccia. La chiamata \cod{g.area()} è risolta a runtime sul tipo
+        concreto contenuto in \cod{g}.
+  \item \cod{fmt.Println(g)} stampa il valore concreto: \cod{\{3 4\}} per
+        \cod{rect} e \cod{\{5\}} per \cod{circle}.
+  \item Output per \cod{r} (3$\times$4): area 12, perimetro 14; per \cod{c}
+        (raggio 5): area $25\pi\approx78.5398$, perimetro $10\pi\approx31.4159$.
+\end{itemize}
+
+Un secondo esempio mostra il polimorfismo in una collezione eterogenea:
+
+\begin{lstlisting}[style=gocode,caption={\texttt{05\_methods\_interfaces/interface\_slice.go}}]
+// interface_slice.go - Polimorfismo: una collezione eterogenea di forme.
+//
+// Esempio aggiuntivo (non presente nelle slide) che riusa solo concetti già
+// visti: interfacce implicite, metodi e range su slice.
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+type shape interface {
+	area() float64
+}
+
+type square struct{ side float64 }
+type circle struct{ radius float64 }
+
+func (s square) area() float64 { return s.side * s.side }
+func (c circle) area() float64 { return math.Pi * c.radius * c.radius }
+
+// totalArea somma le aree di tipi diversi: a runtime ogni chiamata
+// s.area() viene risolta sul tipo concreto contenuto nell'interfaccia.
+func totalArea(shapes []shape) float64 {
+	total := 0.0
+	for _, s := range shapes {
+		total += s.area()
+	}
+	return total
+}
+
+func main() {
+	shapes := []shape{square{2}, circle{1}, square{3}}
+	fmt.Printf("area totale = %.4f\n", totalArea(shapes))
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+area totale = 16.1416
+\end{lstlisting}
+
+La somma è $4+\pi+9\approx16.1416$: \cod{[]shape} contiene tipi diversi, e a
+ogni iterazione \cod{s.area()} invoca l'implementazione giusta.
+
+\begin{attenzione}[Errore comune: un metodo mancante]
+Se un tipo non implementa \emph{tutti} i metodi, il compilatore rifiuta
+l'assegnazione all'interfaccia, spiegando quale metodo manca. Esempio con un
+tipo \cod{T} che implementa solo \cod{A()} assegnato a un'interfaccia che richiede
+\cod{A()} e \cod{B()}:
+\begin{lstlisting}[style=output,aboveskip=0.3em,belowskip=0.3em]
+cannot use T{} (value of struct type T) as I value in variable declaration:
+T does not implement I (missing method B)
+\end{lstlisting}
+Il controllo è fatto \emph{a compile time}, quindi l'implementazione implicita
+non sacrifica la sicurezza dei tipi.
+\end{attenzione}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{Java} un tipo deve dichiarare esplicitamente \cod{implements
+Interfaccia}, e quindi l'autore della classe deve conoscere l'interfaccia in
+anticipo. In \textbf{Go} la relazione è \emph{strutturale}: si può definire
+un'interfaccia \emph{dopo}, anche in un altro package, e i tipi esistenti la
+soddisfano se hanno i metodi giusti. In \textbf{Python} il \emph{duck typing}
+ha un'idea simile («se cammina come un'anatra\ldots»), ma il controllo avviene a
+runtime; in Go è statico. In \textbf{C} un'astrazione simile richiede tabelle
+di puntatori a funzione costruite a mano.
+\end{confronto}
+
+\section{Gestione degli errori}\label{sec:errori}
+
+\subsection{Introduzione}
+
+Go usa \textbf{valori di errore} per indicare stati anomali, non eccezioni. Gli
+errori sono comunicati con un valore di ritorno \emph{separato}. Come ha scritto
+R.~Pike (citato nelle slide): «\emph{Error handling [in Go] does not obscure the
+flow of control}», cioè la gestione degli errori non nasconde il flusso di
+controllo.
+
+\subsection{Funzionamento}
+
+\begin{itemize}
+  \item L'errore è, per \textbf{convenzione}, l'\emph{ultimo} valore restituito.
+  \item Un errore \cod{nil} significa che \textbf{non si è verificato nessun errore}.
+  \item Il chiamante controlla subito:
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,numbers=none]
+result, err := SomeFunction()
+if err != nil {
+	// gestisci l'errore
+}
+\end{lstlisting}
+
+Il tipo \cod{error} è un'\textbf{interfaccia predefinita}:
+
+\begin{lstlisting}[style=gocode,numbers=none]
+type error interface {
+	Error() string
+}
+\end{lstlisting}
+
+Qualunque tipo con un metodo \cod{Error() string} soddisfa \cod{error}, per la
+regola dell'implementazione implicita appena vista. \cod{errors.New} costruisce
+un errore base con un messaggio.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{05\_methods\_interfaces/errors.go}}]
+// errors.go - Gestione degli errori e interfaccia error (slide 69).
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+// L'interfaccia predefinita error è:
+//
+//	type error interface { Error() string }
+//
+// Qualunque tipo con un metodo Error() string la soddisfa.
+
+// divide segnala la condizione anomala con un errore invece che con
+// un'eccezione. L'errore è l'ultimo valore restituito.
+func divide(a, b float64) (float64, error) {
+	if b == 0 {
+		// errors.New costruisce un errore base con un messaggio.
+		return 0, errors.New("divisione per zero")
+	}
+	return a / b, nil // nil = nessun errore
+}
+
+// Un tipo errore personalizzato: porta con sé dati strutturati.
+type rangeError struct {
+	value, max int
+}
+
+func (e rangeError) Error() string {
+	return fmt.Sprintf("valore %d oltre il massimo %d", e.value, e.max)
+}
+
+func check(v int) error {
+	if v > 10 {
+		return rangeError{v, 10}
+	}
+	return nil
+}
+
+func main() {
+	result, err := divide(10, 4)
+	if err != nil {
+		fmt.Println("errore:", err)
+		return
+	}
+	fmt.Println("risultato:", result)
+
+	if _, err := divide(1, 0); err != nil {
+		fmt.Println("errore:", err)
+	}
+
+	for _, v := range []int{5, 42} {
+		if err := check(v); err != nil {
+			fmt.Println("check fallito:", err)
+		} else {
+			fmt.Println("check ok:", v)
+		}
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+risultato: 2.5
+errore: divisione per zero
+check ok: 5
+check fallito: valore 42 oltre il massimo 10
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{divide} restituisce \cod{(float64, error)}: in caso di divisore
+        nullo restituisce un errore creato con \cod{errors.New}, altrimenti
+        \cod{nil}. Dividere 10 per 4 dà 2,5; dividere per zero produce
+        l'errore, che il chiamante stampa.
+  \item \cod{rangeError} è un tipo \emph{definito dal programmatore} che
+        implementa \cod{error} con il metodo \cod{Error()}: così l'errore può
+        trasportare \emph{dati strutturati} (qui il valore e il massimo).
+  \item Il pattern \cod{if err := check(v); err != nil \{ \ldots\ \}} usa
+        l'istruzione di inizializzazione dell'\cod{if} (Sezione~\ref{sec:if}).
+\end{itemize}
+
+\begin{attenzione}[Errore comune: ignorare l'errore]
+Scrivere \cod{data, \_ := os.ReadFile(...)} scarta l'errore e prosegue con un
+valore probabilmente vuoto. Poiché il linguaggio non obbliga a gestirlo
+(non esistono \cod{try}/\cod{catch}), la disciplina del \cod{if err != nil}
+subito dopo la chiamata è la regola d'oro del codice Go.
+\end{attenzione}
+
+\begin{confronto}{C, Python, Java}
+In \textbf{C} gli errori si segnalano con codici di ritorno o con \cod{errno}.
+In \textbf{Java} e \textbf{Python} con eccezioni (\cod{throw}/\cod{raise},
+\cod{try}/\cod{catch}/\cod{except}), che interrompono il flusso e risalgono lo
+stack finché qualcuno le cattura. Go torna ai valori di ritorno del C, ma
+con un tipo dedicato (\cod{error}) e risultati multipli: il flusso di
+controllo resta visibile nel codice. Il costo è un po' di verbosità
+(\cod{if err != nil} ripetuto); il beneficio è che ogni punto che può fallire è
+evidente.
+\end{confronto}
+
+% ===========================================================================
+\chapter{Concorrenza}\label{ch:conc}
+% ===========================================================================
+
+\section{La concorrenza in Go}
+
+Go fornisce la \textbf{concorrenza come parte del linguaggio di base}, non come
+libreria aggiuntiva. Gli strumenti sono due: le \textbf{goroutine}, che eseguono
+codice concorrentemente, e i \textbf{channel}, con cui le goroutine comunicano.
+Insieme implementano il modello \textbf{CSP} (Capitolo~\ref{ch:go}) e permettono di
+realizzare diversi \emph{pattern} di concorrenza.
+
+Il principio guida è: invece di far condividere memoria a più flussi di
+esecuzione proteggendola con lock, si fa in modo che i flussi \emph{si scambino
+valori attraverso channel}. Go fornisce comunque anche i lock tradizionali
+(\cod{sync.Mutex}), trattati nella Sezione~\ref{sec:mutex}.
+
+\begin{attenzione}[Concorrenza e determinismo]
+I programmi concorrenti di questo capitolo sono stati eseguiti più volte. Dove
+l'output \emph{può cambiare} da un'esecuzione all'altra (ordine di stampa
+delle goroutine, scelta casuale di \cod{select}, risultato di una data race) il
+testo lo dichiara esplicitamente e l'output mostrato è \emph{uno dei
+possibili}. In tutti gli altri casi l'output è deterministico.
+\end{attenzione}
+
+\section{Goroutine}\label{sec:goroutine}
+
+\subsection{Introduzione}
+
+\begin{definizione}{goroutine}
+Una \textbf{goroutine} è un \emph{thread leggero} gestito dal runtime di Go.
+\end{definizione}
+
+Si avvia anteponendo \cod{go} a una chiamata di funzione:
+
+\begin{lstlisting}[style=gocode,numbers=none]
+go f(x, y, z)    // avvia una nuova goroutine che esegue f(x, y, z)
+\end{lstlisting}
+
+Gli argomenti sono valutati nella goroutine \emph{chiamante}; l'esecuzione di
+\cod{f} avviene nella nuova goroutine, e il chiamante prosegue senza attendere.
+
+\subsection{Funzionamento}
+
+\begin{itemize}
+  \item Le goroutine \textbf{condividono lo stesso spazio di indirizzi}: per
+        accedere a memoria condivisa serve sincronizzazione.
+  \item \textbf{Attenzione}: quando \cod{main} ritorna, il programma termina
+        \emph{immediatamente}, senza attendere il completamento delle altre
+        goroutine.
+\end{itemize}
+
+\subsubsection{Goroutine contro thread}
+
+Le goroutine \emph{non sono thread} del sistema operativo, ma astrazioni
+leggere costruite sopra di essi.
+
+\begin{itemize}
+  \item Lo \textbf{scheduler di Go} gestisce le goroutine, assegnandole ai
+        thread del sistema operativo: \emph{un thread OS può eseguire molte
+        goroutine}.
+  \item Le goroutine sono molto più economiche da creare e distruggere dei
+        thread OS e consumano molta meno memoria. Le slide indicano come ordine
+        di grandezza circa $5\times$ in tempo di creazione/distruzione e circa
+        $500\times$ in memoria; sono valori \emph{riportati dalle slide}, non
+        misurati in questa guida, e dipendono da piattaforma e configurazione.
+\end{itemize}
+
+\subsubsection{Ordine di esecuzione e priorità}
+
+Le goroutine \textbf{non hanno garanzie sull'ordine di esecuzione} rispetto
+all'ordine in cui sono state dichiarate, hanno tutte la \textbf{stessa priorità}
+e \textbf{non si può controllare} l'ordine con cui vengono eseguite.
+
+\subsubsection{Controllare le prestazioni: \texttt{GOMAXPROCS}}
+
+Le slide indicano che si può impostare \cod{GOMAXPROCS} per controllare quanti
+thread del sistema operativo Go usa \emph{simultaneamente}, tipicamente il
+numero di core virtuali della CPU. Si veda l'Appendice~B per una precisazione sul
+nome: \cod{GOMAXPROCS} è una \emph{variabile d'ambiente}, mentre
+\cod{runtime.GOMAXPROCS(n)} è la \emph{funzione} del package \cod{runtime} che
+fa la stessa cosa da codice (con \cod{n = 0} restituisce solo il valore corrente).
+
+\subsection{Esempio: \texttt{main} termina prima delle goroutine}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/goroutine\_termination.go}}]
+// goroutine_termination.go - ERRORE COMUNE: main termina prima delle
+// goroutine (slide 47).
+//
+// Quando main ritorna, il programma termina immediatamente senza attendere
+// le altre goroutine. L'output di questo programma è NON deterministico:
+// dopo la riga di main possono comparire da 0 a 3 righe "goroutine N"
+// (anche prima della riga di main, in ordine qualsiasi). Nelle prove fatte
+// sono comparse quantità diverse da un'esecuzione all'altra: non c'è
+// alcuna garanzia.
+package main
+
+import "fmt"
+
+func say(id int) {
+	fmt.Println("goroutine", id)
+}
+
+func main() {
+	for i := 1; i <= 3; i++ {
+		go say(i) // avvia la goroutine e prosegue subito
+	}
+	fmt.Println("main termina senza attendere")
+	// Nessuna sincronizzazione: il programma esce qui.
+	// Soluzione: vedi goroutine_wait.go (sync.WaitGroup).
+}
+\end{lstlisting}
+
+Questo programma ha un output \textbf{non deterministico}. In sei esecuzioni
+si sono osservati esiti diversi; tre di essi sono:
+
+\begin{lstlisting}[style=output]
+# esecuzione A
+main termina senza attendere
+
+# esecuzione B
+goroutine 3
+goroutine 1
+goroutine 2
+main termina senza attendere
+
+# esecuzione C
+goroutine 1
+main termina senza attendere
+goroutine 2
+\end{lstlisting}
+
+\subsubsection*{Perché avviene}
+
+L'istruzione \cod{go say(i)} \emph{non attende} che \cod{say} venga eseguita. Dopo
+aver avviato le tre goroutine, \cod{main} stampa il proprio messaggio e ritorna: a
+quel punto il processo termina, e le goroutine che non hanno ancora avuto
+il tempo di stampare vengono abbandonate. Quante ne riescano a stampare
+dipende da come lo scheduler le assegna ai thread: da zero a tre, in ordine
+qualsiasi. Il programma è quindi \emph{scorretto}, anche se in alcune
+esecuzioni sembra funzionare.
+
+\subsection{La correzione: attendere con \texttt{sync.WaitGroup}}
+
+Il rimedio è sincronizzare \cod{main} con le goroutine. Lo strumento è
+\cod{sync.WaitGroup} (Sezione~\ref{sec:waitgroup}).
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/goroutine\_wait.go}}]
+// goroutine_wait.go - Versione corretta di goroutine_termination.go:
+// main attende le goroutine con sync.WaitGroup (slide 47, 64).
+//
+// L'ORDINE con cui le goroutine stampano non è garantito: tutte hanno la
+// stessa priorità e lo scheduler decide. Quindi l'output varia da
+// un'esecuzione all'altra (ma contiene sempre le tre righe).
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func say(id int, wg *sync.WaitGroup) {
+	defer wg.Done() // decrementa il contatore all'uscita, anche in caso di return anticipato
+	fmt.Println("goroutine", id)
+}
+
+func main() {
+	var wg sync.WaitGroup
+	for i := 1; i <= 3; i++ {
+		wg.Add(1) // PRIMA di avviare la goroutine, non al suo interno
+		go say(i, &wg)
+	}
+	wg.Wait() // blocca finché il contatore torna a zero
+	fmt.Println("main: tutte le goroutine sono terminate")
+}
+\end{lstlisting}
+
+Ogni esecuzione stampa sempre le tre righe delle goroutine \emph{prima} della
+riga finale di \cod{main}, ma l'ordine delle tre goroutine varia. Due
+esecuzioni:
+
+\begin{lstlisting}[style=output]
+goroutine 3
+goroutine 1
+goroutine 2
+main: tutte le goroutine sono terminate
+
+goroutine 2
+goroutine 1
+goroutine 3
+main: tutte le goroutine sono terminate
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+\begin{itemize}
+  \item \cod{wg.Add(1)} incrementa il contatore \emph{prima} di avviare la
+        goroutine. Se \cod{Add} fosse chiamata \emph{dentro} la goroutine,
+        \cod{wg.Wait()} potrebbe eseguirsi quando il contatore è ancora zero
+        e ritornare subito.
+  \item \cod{defer wg.Done()} decrementa il contatore all'uscita di \cod{say},
+        anche in caso di \cod{return} anticipato.
+  \item \cod{wg.Wait()} blocca \cod{main} finché il contatore torna a zero.
+  \item Il \cod{*sync.WaitGroup} è passato \emph{per puntatore}: se fosse
+        passato per valore, ogni goroutine decrementerebbe una \emph{copia} e
+        \cod{Wait} non terminerebbe mai.
+\end{itemize}
+
+\subsection{Molte goroutine, pochi thread}
+
+Il programma seguente avvia 10\,000 goroutine, ben più dei thread OS disponibili.
+Lo scheduler le distribuisce sui thread. Ogni goroutine scrive in una posizione
+\emph{diversa} della slice, quindi non ci sono accessi concorrenti allo stesso
+elemento. Il valore di \cod{GOMAXPROCS} dipende dalla macchina: per rendere
+l'output identico ovunque si stampa solo un controllo di coerenza.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/gomaxprocs.go}}]
+// gomaxprocs.go - Goroutine leggere e thread del sistema operativo
+// (slide 47-48).
+//
+// runtime.GOMAXPROCS(0) restituisce il numero massimo di thread OS che
+// possono eseguire codice Go contemporaneamente, senza modificarlo. Il
+// valore dipende dalla macchina, quindi viene stampato solo un controllo
+// di coerenza per mantenere l'output identico ovunque.
+//
+// Qui si avviano 10000 goroutine, molte più dei thread disponibili: lo
+// scheduler di Go le multiplexa sui thread OS. Con 10000 thread OS reali
+// il costo in memoria e tempo di creazione sarebbe molto maggiore.
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+)
+
+func main() {
+	fmt.Println("GOMAXPROCS(0) >= 1:", runtime.GOMAXPROCS(0) >= 1)
+
+	const n = 10000
+	finished := make([]bool, n) // una posizione per goroutine: nessuna race
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			finished[i] = true
+		}()
+	}
+	wg.Wait()
+
+	count := 0
+	for _, f := range finished {
+		if f {
+			count++
+		}
+	}
+	fmt.Println("goroutine completate:", count)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+GOMAXPROCS(0) >= 1: true
+goroutine completate: 10000
+\end{lstlisting}
+
+\begin{confronto}{C, Python, Java}
+Un thread POSIX (\cod{pthread}) o un thread Java \emph{tradizionale} corrisponde
+a un thread del kernel, con uno stack di dimensione tipicamente dell'ordine del
+megabyte: crearne decine di migliaia è costoso. Una goroutine parte con uno
+stack molto piccolo e cresciuto dinamicamente, ed è schedulata dal
+\emph{runtime} in spazio utente, quindi se ne possono avere centinaia di migliaia.
+In \textbf{Python} (CPython) i thread sono thread del sistema operativo, ma
+il \emph{Global Interpreter Lock} impedisce l'esecuzione \emph{parallela} di
+bytecode Python in più thread; le goroutine invece possono girare in parallelo
+su più core. In Go non c'è un oggetto \cod{Thread} da creare e gestire: si
+scrive \cod{go f()}.
+\end{confronto}
+
+\section{Channel}\label{sec:channel}
+
+\subsection{Introduzione}
+
+I \textbf{channel} permettono una comunicazione \emph{efficiente e sicura}
+tra goroutine tramite l'invio di valori. Un channel è una \textbf{coda
+thread-safe} gestita dal runtime di Go; nasconde la complessità della
+comunicazione tra thread (le slide precisano che internamente usa
+meccanismi di sincronizzazione come mutex e semafori). Più goroutine possono inviare
+valori nello stesso channel: è ideale per notifiche, multiplexing, \ldots\ e la
+comunicazione è thread-safe \emph{«out of the box»}.
+
+\begin{definizione}{channel}
+Un \textbf{channel} è un \emph{condotto tipizzato} attraverso il quale una
+goroutine può inviare e ricevere valori con l'operatore \cod{<-}. I dati fluiscono
+\emph{nella direzione della freccia}.
+\end{definizione}
+
+\subsection{Sintassi}
+
+\begin{lstlisting}[style=gocode,numbers=none]
+ch <- v        // invia v sul channel ch
+v := <-ch      // riceve da ch e assegna a v
+ch := make(chan int)   // crea un channel di int
+\end{lstlisting}
+
+\begin{itemize}
+  \item Un channel trasporta valori di un tipo specifico (\cod{int}, struct,
+        \ldots). Per impostazione predefinita è \textbf{bidirezionale}.
+  \item Va creato con \cod{make} prima dell'uso. Il valore zero di un channel è
+        \cod{nil}.
+  \item \textbf{Invio e ricezione bloccano} finché l'altro lato non è pronto
+        (per i channel senza buffer, vedi Sezione~\ref{sec:buffered}). Le
+        goroutine possono quindi \textbf{sincronizzarsi} senza lock espliciti né
+        variabili di condizione.
+\end{itemize}
+
+\subsection{Un channel come sincronizzazione}
+
+Il programma seguente (esempio aggiuntivo) mostra l'uso più semplice di un
+channel come meccanismo di sincronizzazione: \cod{main} attende la fine di una
+goroutine ricevendo da un channel \cod{done}.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/channel\_sync.go}}]
+// channel_sync.go - Un channel come meccanismo di sincronizzazione
+// (slide 50).
+//
+// Esempio aggiuntivo: main attende la fine di una goroutine ricevendo da un
+// channel "done". Non servono lock né condition variable.
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func worker(done chan bool) {
+	fmt.Println("worker: inizio lavoro...")
+	time.Sleep(100 * time.Millisecond) // lavoro simulato
+	fmt.Println("worker: fatto")
+	done <- true // segnala il completamento
+}
+
+func main() {
+	done := make(chan bool)
+	go worker(done)
+
+	// La ricezione blocca main finché il worker non invia.
+	<-done
+	fmt.Println("main: il worker ha terminato")
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+worker: inizio lavoro...
+worker: fatto
+main: il worker ha terminato
+\end{lstlisting}
+
+La ricezione \cod{<-done} blocca \cod{main} finché il worker non invia
+\cod{true}; quindi «main: il worker ha terminato» compare sempre dopo
+«worker: fatto».
+
+\subsection{Esempio: somma distribuita}
+
+La somma di una slice è distribuita tra due goroutine: è il pattern \textbf{SPMD}
+(\emph{Single Program Multiple Data}), in cui ogni goroutine esegue lo stesso
+programma su una porzione diversa dei dati.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/channel\_sum.go}}]
+// channel_sum.go - Somma distribuita tra due goroutine (slide 51).
+//
+// Pattern SPMD (Single Program Multiple Data): ogni goroutine esegue lo
+// stesso codice su una porzione diversa dei dati.
+package main
+
+import "fmt"
+
+func sum(s []int, c chan int) {
+	sum := 0
+	for _, v := range s {
+		sum += v
+	}
+	c <- sum // send sum to c
+}
+
+func main() {
+	s := []int{7, 2, 8, -9, 4, 0}
+	c := make(chan int)
+	go sum(s[:len(s)/2], c) // prima metà: 7+2+8 = 17
+	go sum(s[len(s)/2:], c) // seconda metà: -9+4+0 = -5
+
+	// Le due ricezioni bloccano finché le goroutine non inviano.
+	// Non si sa quale somma arrivi per prima, ma il totale è lo stesso
+	// (l'addizione è commutativa).
+	sum1, sum2 := <-c, <-c
+	fmt.Println("Total sum:", sum1+sum2)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Total sum: 12
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice e flusso di esecuzione}
+
+\begin{enumerate}
+  \item \cod{main} crea il channel \cod{c} (senza buffer) e lancia due goroutine
+        \cod{sum}, sulla prima e sulla seconda metà di \cod{s}:
+        $7+2+8=17$ e $-9+4+0=-5$.
+  \item \cod{sum1, sum2 := <-c, <-c} esegue due ricezioni. Ciascuna \emph{blocca}
+        \cod{main} finché una goroutine non invia il proprio risultato.
+  \item Non si sa quale somma arrivi per prima, ma il totale
+        $17+(-5)=12$ è lo stesso perché l'addizione è commutativa: l'output
+        è deterministico anche se l'ordine di arrivo non lo è.
+\end{enumerate}
+
+\subsection{Esempio: generatore di Fibonacci}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/channel\_fib.go}}]
+// channel_fib.go - Generatore di Fibonacci con goroutine e channel
+// (slide 52).
+package main
+
+import "fmt"
+
+// fib è un produttore: invia numeri di Fibonacci sul channel c, per
+// sempre. Ogni invio blocca finché il main non riceve (channel senza
+// buffer), quindi il produttore non va "avanti" rispetto al consumatore.
+func fib(c chan int) {
+	x, y := 1, 1
+	for {
+		c <- x
+		x, y = y, x+y
+	}
+}
+
+func main() {
+	c := make(chan int)
+	go fib(c)
+	for i := 0; i < 10; i++ {
+		fmt.Println(<-c)
+	}
+	// Quando main termina, la goroutine fib (bloccata su un invio)
+	// viene semplicemente abbandonata: si veda select per una chiusura
+	// ordinata.
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+1
+1
+2
+3
+5
+8
+13
+21
+34
+55
+\end{lstlisting}
+
+\cod{fib} è un \emph{produttore} che invia per sempre sul channel; \cod{main} è il
+\emph{consumatore} e riceve solo 10 valori. Poiché il channel non ha buffer, ogni
+invio blocca finché \cod{main} non riceve: il produttore non può «correre
+avanti». Dopo la decima ricezione, \cod{main} termina e la goroutine \cod{fib}
+(bloccata su un invio) viene semplicemente abbandonata: è accettabile qui
+perché il programma finisce, ma in un programma di lunga durata una goroutine
+bloccata per sempre è una \emph{perdita} (\emph{goroutine leak}). La versione
+con \cod{select} e un channel \cod{quit} (Sezione~\ref{sec:select}) la ferma in
+modo ordinato.
+
+\begin{confronto}{C, Python, Java}
+Un channel somiglia a una coda bloccante: in \textbf{Java}
+\cod{SynchronousQueue} (senza buffer) o \cod{ArrayBlockingQueue} (con buffer), in
+\textbf{Python} \cod{queue.Queue}, in \textbf{C} un \emph{pipe} o una coda
+protetta da mutex e condition variable scritta a mano. Le differenze
+caratteristiche di Go sono che il channel è un tipo \emph{di primo livello} del
+linguaggio, ha tipo statico, direzione e operazioni di \cod{close}, e si
+combina con \cod{select}.
+\end{confronto}
+
+\section{Channel con e senza buffer}\label{sec:buffered}
+
+\begin{description}
+  \item[Channel senza buffer (\emph{unbuffered}).] Per impostazione
+        predefinita le operazioni su un channel bloccano. Secondo la specifica del
+        linguaggio: se la capacità è zero o assente, il channel è
+        senza buffer e la comunicazione riesce \emph{solo quando mittente e
+        ricevente sono entrambi pronti}; in un channel senza buffer il mittente
+        resta bloccato finché il ricevente non ha ricevuto il valore.
+  \item[Channel con buffer (\emph{buffered}).] Non bloccano se non sono
+        pieni (per l'invio) o non sono vuoti (per la ricezione). Si specifica la
+        capacità alla creazione: \cod{ch := make(chan int, 100)}. L'invio
+        blocca \emph{solo} se il buffer è pieno; la ricezione blocca \emph{solo}
+        se il buffer è vuoto. È utile per \emph{disaccoppiare} le goroutine:
+        possono procedere senza sincronizzarsi a ogni passo.
+\end{description}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/channel\_buffered.go}}]
+// channel_buffered.go - Channel con e senza buffer (slide 53).
+package main
+
+import "fmt"
+
+func main() {
+	// Con buffer di capacità 2: i primi due invii NON bloccano anche se
+	// nessuno sta ancora ricevendo.
+	ch := make(chan int, 2)
+	ch <- 1
+	ch <- 2
+	fmt.Println("len =", len(ch), "cap =", cap(ch)) // len=2 cap=2
+
+	// Un terzo invio bloccherebbe (buffer pieno) e, non esistendo altre
+	// goroutine che ricevano, causerebbe un deadlock. Le ricezioni
+	// seguono l'ordine FIFO.
+	fmt.Println(<-ch) // 1
+	fmt.Println(<-ch) // 2
+
+	// Un channel senza buffer (capacità 0) richiede sender e receiver
+	// pronti contemporaneamente: l'invio avviene in una goroutine perché
+	// altrimenti main si bloccherebbe da solo.
+	unbuf := make(chan string)
+	go func() { unbuf <- "ping" }()
+	fmt.Println(<-unbuf)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+len = 2 cap = 2
+1
+2
+ping
+\end{lstlisting}
+
+\subsection{Analisi del codice}
+
+\begin{itemize}
+  \item Con \cod{make(chan int, 2)} i primi due invii non bloccano anche se
+        nessuno riceve; \cod{len} e \cod{cap} dicono quanti elementi ci sono e
+        quanti ne entrano. Le ricezioni seguono l'ordine \textbf{FIFO}.
+  \item Un \emph{terzo} invio senza ricezioni nel frattempo bloccherebbe per
+        sempre: nel \cod{main} da solo, il runtime lo rileverebbe come deadlock
+        (Sezione~\ref{sec:deadlock}).
+  \item Nel channel senza buffer, l'invio è fatto in una goroutine apposita:
+        eseguito direttamente da \cod{main} bloccherebbe \cod{main} stesso, prima
+        che arrivi la ricezione sulla riga successiva.
+\end{itemize}
+
+\begin{nota}[Una precisazione sulle slide]
+Una slide afferma che «invio e ricezione bloccano finché l'altro lato è pronto»;
+questa descrizione è esatta per i channel \emph{senza buffer}. Con un buffer
+(slide successive) i blocchi si verificano solo a buffer pieno (invio) o vuoto
+(ricezione). Le due affermazioni sono coerenti se lette in quest'ordine.
+\end{nota}
+
+\section{Chiudere un channel e iterare con \texttt{range}}\label{sec:close}
+
+\subsection{\texttt{close}}
+
+Un channel si chiude con \cod{close(ch)}. Le regole sono:
+
+\begin{itemize}
+  \item il/i \textbf{mittente/i} devono smettere di inviare dopo la chiusura;
+  \item il/i \textbf{ricevente/i} possono ancora ricevere i \emph{valori già nel
+        buffer};
+  \item i riceventi possono verificare se il channel è chiuso con la forma a due
+        valori \cod{v, ok := <-ch}: \cod{ok} è \cod{false} se il channel è chiuso
+        \emph{e} non ci sono più valori da ricevere;
+  \item \textbf{solo il mittente} (non il ricevente) dovrebbe chiudere il
+        channel;
+  \item \textbf{inviare su un channel chiuso} causa un \textbf{panic}:
+        \texttt{panic: send on closed channel};
+  \item ricevere da un channel chiuso e vuoto restituisce subito il \emph{valore
+        zero} (con \cod{ok == false}).
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/channel\_close.go}}]
+// channel_close.go - close e rilevamento della chiusura (slide 54).
+package main
+
+import "fmt"
+
+func main() {
+	jobs := make(chan int, 5)
+	done := make(chan bool)
+
+	// Il consumatore legge finché il channel è chiuso E vuoto.
+	go func() {
+		for {
+			j, more := <-jobs // more == false: chiuso e senza altri valori
+			if more {
+				fmt.Println("received job", j)
+			} else {
+				fmt.Println("received all jobs")
+				done <- true
+				return
+			}
+		}
+	}()
+
+	// Il produttore (il sender) invia e poi chiude: solo il sender
+	// dovrebbe chiudere un channel.
+	for j := 1; j <= 3; j++ {
+		jobs <- j
+		fmt.Println("sent job", j)
+	}
+	close(jobs)
+	fmt.Println("sent all jobs")
+
+	<-done // attende il consumatore
+
+	// Ricevere da un channel chiuso e vuoto restituisce subito il valore
+	// zero e ok == false.
+	v, ok := <-jobs
+	fmt.Println(v, ok) // 0 false
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+sent job 1
+sent job 2
+sent job 3
+sent all jobs
+received job 1
+received job 2
+received job 3
+received all jobs
+0 false
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+Il consumatore (goroutine anonima) legge in un ciclo con
+\cod{j, more := <-jobs}: finché \cod{more} è vero stampa il job, appena diventa
+falso (channel chiuso \emph{e} vuoto) segnala la fine su \cod{done}. Il
+produttore (\cod{main}) invia tre job, chiude il channel, e attende \cod{done}. In
+fondo la ricezione da un channel già chiuso e vuoto dà \cod{0 false}.
+
+\begin{nota}
+Nell'output l'\emph{intercalarsi} delle righe «sent» e «received» non è
+garantito: dipende dallo scheduler. Qui il buffer di 5 posti permette a \cod{main}
+di inviare tutti e tre i job prima che il consumatore parta, ma in
+un'altra esecuzione le righe potrebbero alternarsi. Ciò che è garantito è
+l'ordine interno (job 1, 2, 3) e che «received all jobs» segua tutti i
+«received job».
+\end{nota}
+
+\begin{attenzione}[Errore comune: inviare su un channel chiuso]
+L'invio su un channel chiuso non restituisce un errore ma provoca un
+\emph{panic}: si arresta l'intero programma. Per questo la chiusura spetta al
+mittente, che sa quando non ha più nulla da inviare; un ricevente non ha modo
+di sapere se altri mittenti stanno ancora inviando. L'esempio seguente termina
+\emph{volutamente} con un panic.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/pitfall\_send\_closed.go}}]
+// pitfall_send_closed.go - ERRORE COMUNE: invio su un channel chiuso
+// (slide 54).
+//
+// ATTENZIONE: questo programma TERMINA VOLUTAMENTE con un panic:
+//
+//	panic: send on closed channel
+//
+// Si noti che la RICEZIONE da un channel chiuso è invece lecita.
+package main
+
+import "fmt"
+
+func main() {
+	ch := make(chan int, 2)
+	ch <- 1
+	close(ch)
+
+	v, ok := <-ch // ricezione dal buffer residuo: 1 true
+	fmt.Println(v, ok)
+	v, ok = <-ch // channel chiuso e vuoto: 0 false
+	fmt.Println(v, ok)
+
+	fmt.Println("invio su channel chiuso...")
+	ch <- 2 // PANIC
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+1 true
+0 false
+invio su channel chiuso...
+panic: send on closed channel
+
+goroutine 1 [running]:
+main.main()
+        .../pitfall_send_closed.go:24 +0x1a5
+exit status 2
+\end{lstlisting}
+La ricezione dopo \cod{close} è lecita (prima il valore nel buffer, \cod{1 true},
+poi il valore zero, \cod{0 false}); l'invio no.
+\end{attenzione}
+
+\subsection{\texttt{range} su un channel}\label{sec:chanrange}
+
+Con \cod{range} si ricevono ripetutamente valori da un channel \emph{finché
+non viene chiuso}:
+
+\begin{lstlisting}[style=gocode,numbers=none]
+for elem := range ch {
+	fmt.Println(elem)
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/channel\_range.go}}]
+// channel_range.go - range su un channel (slide 55).
+package main
+
+import "fmt"
+
+func main() {
+	ch := make(chan int, 3)
+
+	go func() {
+		for i := 1; i <= 5; i++ {
+			ch <- i
+		}
+		// Senza close, il range sotto non terminerebbe mai e main
+		// andrebbe in deadlock dopo aver letto i cinque valori.
+		close(ch)
+	}()
+
+	// Riceve ripetutamente finché il channel è chiuso e svuotato.
+	for elem := range ch {
+		fmt.Println(elem)
+	}
+	fmt.Println("channel chiuso, ciclo terminato")
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+1
+2
+3
+4
+5
+channel chiuso, ciclo terminato
+\end{lstlisting}
+
+\begin{attenzione}[Errore comune: dimenticare \texttt{close} con \texttt{range}]
+Il ciclo \cod{for elem := range ch} termina \emph{solo} quando \cod{ch} è chiuso
+e svuotato. Se il mittente dimentica \cod{close(ch)}, dopo l'ultimo valore il
+ciclo si blocca in attesa di altri: se non esistono altre goroutine in grado di
+inviare, il runtime segnala un deadlock.
+\end{attenzione}
+
+\section{\texttt{select}}\label{sec:select}
+
+\subsection{Introduzione e sintassi}
+
+\cod{select} permette a una goroutine di \textbf{attendere su più channel
+contemporaneamente}. Blocca finché uno dei suoi \cod{case} può procedere, poi
+esegue quel caso.
+
+\begin{itemize}
+  \item Se \emph{più} case sono pronti, ne viene scelto \textbf{uno a caso}.
+  \item Se nessun case è pronto e c'è un ramo \cod{default}, viene eseguito
+        quello (comportamento non bloccante).
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,numbers=none]
+select {
+case msg1 := <-ch1:    // ricezione su ch1
+	// gestisci msg1
+case msg2 := <-ch2:    // ricezione su ch2
+	// gestisci msg2
+}
+\end{lstlisting}
+
+È utile per il \emph{multiplexing} e per gestire i \emph{timeout}.
+
+\begin{nota}[Un refuso nelle slide]
+Nel frammento della slide la variabile della prima ricezione è scritta
+\cod{mgs1} (e poi commentata come \cod{msg1}). È un errore di battitura:
+il nome corretto, usato nei listati di questa guida, è \cod{msg1}.
+\end{nota}
+
+\subsection{Esempio: Fibonacci con \texttt{select} e un channel \texttt{quit}}
+
+Versione del generatore con due channel: \cod{ch} per inviare i valori e
+\cod{quit} per segnalare quando fermarsi.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/channel\_fib\_select.go}}]
+// channel_fib_select.go - Fibonacci con select e channel quit (slide 57-58).
+package main
+
+import "fmt"
+
+func fibonacci(ch, quit chan int) {
+	x, y := 1, 1
+	for {
+		select {
+		case ch <- x: // invia il numero di Fibonacci corrente
+			x, y = y, x+y
+		case <-quit: // riceve il segnale di terminazione
+			fmt.Println("quit")
+			return
+		}
+	}
+}
+
+func main() {
+	ch := make(chan int) // channel senza buffer
+	quit := make(chan int)
+
+	go func() { // goroutine anonima: il consumatore
+		for i := 0; i < 10; i++ {
+			fmt.Println(<-ch) // riceve un valore di Fibonacci
+		}
+		quit <- 0 // dice a fibonacci di fermarsi
+	}()
+
+	fibonacci(ch, quit) // eseguita nella goroutine principale
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+1
+1
+2
+3
+5
+8
+13
+21
+34
+55
+quit
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice e flusso di esecuzione}
+
+\begin{enumerate}
+  \item \cod{main} avvia una goroutine anonima (il consumatore) e poi esegue
+        \cod{fibonacci(ch, quit)} \emph{nella goroutine principale}.
+  \item Dentro \cod{fibonacci}, il \cod{select} offre due possibilità: inviare
+        \cod{x} su \cod{ch} (pronto solo quando il consumatore sta ricevendo) o
+        ricevere da \cod{quit} (pronto solo quando qualcuno ha inviato).
+  \item Il consumatore riceve 10 valori, poi invia su \cod{quit}. Da quel
+        momento il ramo \cod{quit} del \cod{select} diventa pronto
+        mentre il ramo di invio non lo è più (nessuno riceve): \cod{fibonacci}
+        stampa «quit» e ritorna, terminando in modo \emph{pulito}.
+\end{enumerate}
+
+\begin{attenzione}[Errore nella slide: variabile non definita]
+Nelle slide \cod{main} dichiara \cod{ch := make(chan int)} ma poi chiama
+\cod{fibonacci(c, quit)}: la variabile \cod{c} \emph{non esiste} e il
+programma non compila (errore reale: \texttt{undefined: c}). Si tratta di un
+\textbf{errore di trascrizione} nella slide, non una scelta tecnica: il
+listato di questa guida usa il nome corretto \cod{ch}. Si veda anche
+l'Appendice~B.
+\end{attenzione}
+
+\subsection{Scelta casuale tra case pronti}
+
+Se entrambi i case sono pronti, la scelta è casuale. Il programma seguente ha
+due channel già pieni:
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/select\_multiplex.go}}]
+// select_multiplex.go - select su più channel e scelta casuale (slide 56).
+package main
+
+import "fmt"
+
+func main() {
+	ch1 := make(chan string, 1)
+	ch2 := make(chan string, 1)
+	ch1 <- "da ch1"
+	ch2 <- "da ch2"
+
+	// Entrambi i case sono pronti: select ne sceglie UNO a caso. L'ordine
+	// delle due righe stampate può quindi variare da esecuzione a
+	// esecuzione, ma entrambi i messaggi vengono sempre ricevuti.
+	for i := 0; i < 2; i++ {
+		select {
+		case msg1 := <-ch1:
+			fmt.Println("ricevuto", msg1)
+		case msg2 := <-ch2:
+			fmt.Println("ricevuto", msg2)
+		}
+	}
+}
+\end{lstlisting}
+
+L'output è \textbf{non deterministico}: l'ordine delle due righe varia. In sei
+esecuzioni consecutive si sono osservate entrambe le sequenze:
+
+\begin{lstlisting}[style=output]
+ricevuto da ch1
+ricevuto da ch2
+
+ricevuto da ch2
+ricevuto da ch1
+\end{lstlisting}
+
+La scelta casuale evita che un channel «affami» gli altri.
+
+\subsection{\texttt{select} non bloccante con \texttt{default}}
+
+Con un ramo \cod{default} il \cod{select} \emph{non blocca} se i channel non sono
+pronti. I case possono essere anche invii:
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/select\_default.go}}]
+// select_default.go - select non bloccante con default (slide 56, 59).
+package main
+
+import "fmt"
+
+func main() {
+	ch1 := make(chan string)
+	ch3 := make(chan string, 1)
+
+	// Ricezione non bloccante: nessun valore pronto -> scatta default.
+	select {
+	case msg := <-ch1:
+		fmt.Println("ricevuto", msg)
+	default:
+		fmt.Println("nessun messaggio pronto")
+	}
+
+	// Invio non bloccante: ch3 ha un posto libero nel buffer.
+	select {
+	case ch3 <- "ciao":
+		fmt.Println("inviato su ch3")
+	default:
+		fmt.Println("ch3 pieno")
+	}
+
+	// Secondo invio: il buffer è ora pieno, quindi si va in default.
+	select {
+	case ch3 <- "altro":
+		fmt.Println("inviato su ch3")
+	default:
+		fmt.Println("ch3 pieno")
+	}
+
+	// Ora c'è un valore pronto su ch3: viene scelto il case di ricezione.
+	select {
+	case msg := <-ch3:
+		fmt.Println("ricevuto", msg)
+	default:
+		fmt.Println("nessun messaggio pronto")
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+nessun messaggio pronto
+inviato su ch3
+ch3 pieno
+ricevuto ciao
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+Nel primo \cod{select} nessuno ha inviato su \cod{ch1}: scatta \cod{default}.
+\cod{ch3} ha buffer 1: il primo invio riesce (spazio libero), il secondo trova il
+buffer pieno e va in \cod{default}; infine la ricezione trova un valore
+pronto. Senza \cod{default}, ognuna di queste operazioni bloccherebbe.
+
+\section{Timer}\label{sec:timer}
+
+Un \textbf{timer} fornisce un channel (il campo \cod{C}) su cui riceve un valore
+quando la durata specificata è trascorsa. Si usa per attendere un tempo
+preciso:
+
+\begin{lstlisting}[style=gocode,numbers=none]
+timer := time.NewTimer(time.Second * 2)   // attende 2 secondi
+<-timer.C                                  // blocca finché il timer scatta
+\end{lstlisting}
+
+Un timer può essere \textbf{annullato} prima che scatti con \cod{Stop()}. È
+utile per implementare:
+
+\begin{itemize}
+  \item \textbf{timeout}: attendere un evento o il completamento di
+        un'operazione prima di procedere;
+  \item \textbf{ritardi}: attendere un periodo prima di eseguire un compito.
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/timers.go}}]
+// timers.go - Timer e timeout con select (slide 56, 60).
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// Attesa di una durata: il timer espone un channel C su cui riceve
+	// un valore quando scade.
+	start := time.Now()
+	timer := time.NewTimer(200 * time.Millisecond)
+	<-timer.C // blocca fino allo scadere
+	fmt.Println("timer 1 scaduto, trascorsi almeno 200ms:",
+		time.Since(start) >= 200*time.Millisecond)
+
+	// Un timer si può annullare con Stop() prima che scatti.
+	timer2 := time.NewTimer(time.Second)
+	stopped := timer2.Stop()
+	fmt.Println("timer 2 annullato:", stopped)
+
+	// Timeout: select attende un risultato oppure il timer, a seconda di
+	// quale arrivi prima.
+	result := make(chan string)
+	go func() {
+		time.Sleep(500 * time.Millisecond) // operazione lenta
+		result <- "risultato"
+	}()
+
+	// Anche il timeout è un timer: il suo channel C si "attiva" allo
+	// scadere dei 100ms. Vince il case che diventa pronto per primo.
+	timeout := time.NewTimer(100 * time.Millisecond)
+	select {
+	case r := <-result:
+		fmt.Println(r)
+		timeout.Stop()
+	case <-timeout.C:
+		fmt.Println("timeout: l'operazione è troppo lenta")
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+timer 1 scaduto, trascorsi almeno 200ms: true
+timer 2 annullato: true
+timeout: l'operazione è troppo lenta
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+Il primo timer blocca \cod{main} per 200\,ms; il programma verifica solo che sia
+trascorso \emph{almeno} quel tempo (la durata esatta non è deterministica, ma non può
+essere inferiore). \cod{Stop()} annulla il secondo timer: restituisce \cod{true}
+perché il timer non era ancora scattato. L'ultimo blocco realizza un
+\emph{timeout} con \cod{select}: l'operazione lenta impiega 500\,ms, il timer da
+100\,ms scatta per primo e vince il relativo \cod{case}. Quella goroutine resterà
+in attesa di inviare su un channel senza ricevente, ma qui il programma termina
+subito.
+
+\section{Mutua esclusione}\label{sec:mutex}
+
+\subsection{Esercizio: un mutex realizzato con un channel}
+
+Go fornisce i \emph{mutex} per garantire l'accesso sicuro ai dati condivisi tra
+goroutine; \cod{sync.Mutex} è lo strumento usuale per bloccare e sbloccare.
+Le slide propongono anche un esercizio: realizzare un mutex \emph{usando un
+channel}, completando lo scheletro
+
+\begin{lstlisting}[style=gocode,numbers=none]
+type Lock struct { /* ? */ }
+func NewLock() Lock       { /* ? */ }
+func (l *Lock) Lock()     { /* ? */ }
+func (l *Lock) Unlock()   { /* ? */ }
+\end{lstlisting}
+
+\textbf{Idea della soluzione.} Un channel con buffer di capacità 1 contiene al
+più un «gettone». Chi possiede il gettone detiene il lock; chi non lo trova
+si blocca sulla ricezione:
+
+\begin{itemize}
+  \item \cod{NewLock} crea il channel con buffer 1 e vi inserisce un valore:
+        il lock parte \emph{libero} (gettone presente);
+  \item \cod{Lock()} \emph{riceve} dal channel: se il gettone c'è lo prende (il
+        lock è ora occupato), altrimenti la goroutine si blocca finché qualcuno
+        lo restituisce;
+  \item \cod{Unlock()} \emph{invia} sul channel: restituisce il gettone,
+        liberando il lock e svegliando eventualmente una goroutine in
+        attesa.
+\end{itemize}
+
+L'invariante è: gettoni nel channel $=1$ se il lock è libero, $0$ se occupato.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/mutex\_using\_channel.go}}]
+// mutex_using_channel.go - Esercizio: un mutex realizzato con un channel
+// (slide 61-62).
+//
+// Idea: un channel con buffer di capacità 1 contiene al più un "gettone".
+// Chi possiede il gettone detiene il lock; chi lo trova assente si blocca
+// sulla ricezione.
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+// Nota: "go vet" segnala "return copies lock value" su NewLock perché il
+// tipo ha metodi Lock/Unlock e vet applica l'euristica dei lock non
+// copiabili (come sync.Mutex). Qui la copia è innocua: la struct contiene
+// solo un riferimento al channel, quindi tutte le copie condividono lo
+// stesso "gettone". Il codice è quello della slide.
+type Lock struct {
+	ch chan bool
+}
+
+func NewLock() Lock {
+	lock := Lock{make(chan bool, 1)} // channel con buffer
+	lock.ch <- true                  // gettone iniziale: il lock parte libero
+	return lock
+}
+
+// Lock prende il gettone; se non c'è, blocca finché qualcuno lo restituisce.
+func (l *Lock) Lock() {
+	<-l.ch // receive
+}
+
+// Unlock restituisce il gettone.
+func (l *Lock) Unlock() {
+	l.ch <- true // send
+}
+
+func main() {
+	lock := NewLock()
+	counter := 0
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 1000; j++ {
+				lock.Lock()
+				counter++ // sezione critica
+				lock.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+	fmt.Println("counter =", counter) // sempre 100000
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+counter = 100000
+\end{lstlisting}
+
+Cento goroutine incrementano mille volte la stessa variabile \cod{counter}
+proteggendola con il lock: il risultato è sempre $100\times1000=100000$.
+
+\begin{nota}[\texttt{go vet} e la copia del lock]
+Il codice è quello della slide. L'analizzatore \cod{go vet} segnala
+\texttt{return copies lock value} su \cod{NewLock}, perché il tipo ha metodi
+\cod{Lock}/\cod{Unlock} e vet applica l'euristica dei «lock non copiabili»
+(come \cod{sync.Mutex}, che \emph{non} va copiato). Nel nostro caso la copia
+è innocua: la struct contiene solo il \emph{riferimento} a un channel, e tutte
+le copie condividono lo stesso gettone. Le slide stesse notano che, nella
+pratica, \cod{sync.Mutex} è più idiomatico ed efficiente.
+\end{nota}
+
+\subsection{\texttt{sync.Mutex}}
+
+\textbf{Mutex} (\cod{sync.Mutex}): garantisce la \emph{mutua esclusione} e
+previene le \emph{race condition}; solo una goroutine alla volta può accedere
+alla \emph{sezione critica}. L'uso è:
+
+\begin{lstlisting}[style=gocode,numbers=none]
+mu.Lock()
+counter++
+mu.Unlock()
+\end{lstlisting}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/mutex.go}}]
+// mutex.go - sync.Mutex per la mutua esclusione (slide 63).
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+// Counter protegge il campo n con un mutex.
+type Counter struct {
+	mu sync.Mutex
+	n  int
+}
+
+func (c *Counter) Inc() {
+	c.mu.Lock()
+	// defer garantisce lo Unlock anche in caso di return anticipato o panic.
+	defer c.mu.Unlock()
+	c.n++
+}
+
+func main() {
+	var c Counter
+	var wg sync.WaitGroup
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 1000; j++ {
+				c.Inc()
+			}
+		}()
+	}
+	wg.Wait()
+	fmt.Println("counter =", c.n) // sempre 100000
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+counter = 100000
+\end{lstlisting}
+
+Si noti \cod{defer c.mu.Unlock()} subito dopo il \cod{Lock}: garantisce il
+rilascio anche in caso di \cod{return} anticipato o di panic, ed è l'applicazione
+tipica di \cod{defer} (Sezione~\ref{sec:defer}).
+
+\begin{attenzione}[Errore comune: mancata sincronizzazione (data race)]
+Se si omette il mutex, l'operazione \cod{counter++} \emph{non è atomica}: si
+compone di lettura, incremento e scrittura. Due goroutine possono leggere lo
+stesso valore, incrementarlo e riscrivere \emph{lo stesso} risultato,
+perdendo un aggiornamento. L'esempio seguente ha un output \textbf{non
+deterministico} (di solito inferiore a 100000).
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/race\_counter.go}}]
+// race_counter.go - ERRORE COMUNE: data race su una variabile condivisa
+// (slide 47, 63).
+//
+// counter++ NON è atomico (legge, incrementa, scrive). Con più goroutine
+// non sincronizzate alcuni aggiornamenti si perdono. Il risultato è
+// NON deterministico e quasi sempre inferiore a 100000. (In rari casi su
+// macchine con un solo thread potrebbe risultare esatto.)
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	counter := 0
+	var wg sync.WaitGroup
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 1000; j++ {
+				counter++ // DATA RACE: nessuna mutua esclusione
+			}
+		}()
+	}
+	wg.Wait()
+	fmt.Println("atteso 100000, ottenuto", counter)
+	// Correzione: vedi mutex.go (sync.Mutex).
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+atteso 100000, ottenuto 94808
+atteso 100000, ottenuto 99120
+atteso 100000, ottenuto 95983
+\end{lstlisting}
+(Tre esecuzioni diverse: i valori cambiano a ogni lancio.) Il bug è insidioso perché il programma compila,
+termina e produce un numero plausibile: l'errore è nella \emph{perdita}
+silenziosa di aggiornamenti. Si risolve con \cod{sync.Mutex} (o con un
+channel come sopra).
+\end{attenzione}
+
+\begin{nota}[Un mutex non è rientrante]
+Se una goroutine chiama \cod{Lock()} mentre già detiene lo stesso mutex, si
+blocca per sempre su se stessa (deadlock): a differenza dei
+\cod{synchronized}/\cod{ReentrantLock} di Java, \cod{sync.Mutex} non è
+rientrante.
+\end{nota}
+
+\subsection{\texttt{sync.RWMutex}}
+
+Il \textbf{mutex lettori/scrittore} (\cod{sync.RWMutex}) consente \emph{più
+lettori oppure un solo scrittore}. Migliora le prestazioni quando le letture
+sono frequenti e le scritture rare.
+
+\begin{itemize}
+  \item \textbf{Lettori}: \cod{RLock()}\,/\,\cod{RUnlock()} $\to$ accesso
+        \emph{condiviso};
+  \item \textbf{Scrittore}: \cod{Lock()}\,/\,\cod{Unlock()} $\to$ accesso
+        \emph{esclusivo}.
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/rwmutex.go}}]
+// rwmutex.go - sync.RWMutex: molti lettori oppure un solo scrittore
+// (slide 63).
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+// Store è una cache chiave-valore letta spesso e scritta di rado.
+type Store struct {
+	mu   sync.RWMutex
+	data map[string]int
+}
+
+// Get usa un lock di LETTURA: più Get possono procedere insieme.
+func (s *Store) Get(k string) (int, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	v, ok := s.data[k]
+	return v, ok
+}
+
+// Set usa il lock di SCRITTURA: accesso esclusivo (blocca lettori e altri
+// scrittori).
+func (s *Store) Set(k string, v int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data[k] = v
+}
+
+func main() {
+	s := &Store{data: make(map[string]int)}
+	s.Set("a", 1)
+
+	var wg sync.WaitGroup
+	// 10 lettori concorrenti.
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if v, ok := s.Get("a"); !ok || v < 1 {
+				fmt.Println("valore inatteso")
+			}
+		}()
+	}
+	// 1 scrittore concorrente.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.Set("b", 2)
+	}()
+	wg.Wait()
+
+	v, _ := s.Get("b")
+	fmt.Println("b =", v)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+b = 2
+\end{lstlisting}
+
+\cod{Get} usa il lock di lettura: dieci lettori possono procedere insieme.
+\cod{Set} prende il lock di scrittura, che esclude lettori e altri scrittori. Il
+risultato finale (\cod{b = 2}) è deterministico perché \cod{wg.Wait()} garantisce
+che lo scrittore abbia terminato.
+
+\begin{confronto}{C, Python, Java}
+Equivalenti: in \textbf{C} \cod{pthread\_mutex\_t} e
+\cod{pthread\_rwlock\_t}; in \textbf{Java} \cod{synchronized}, \cod{ReentrantLock},
+\cod{ReentrantReadWriteLock}; in \textbf{Python} \cod{threading.Lock} e
+\cod{RLock}. La differenza di filosofia: in Go si preferisce, quando
+possibile, comunicare con channel anziché proteggere memoria condivisa con lock;
+i mutex restano lo strumento giusto per proteggere uno stato semplice (un
+contatore, una cache).
+\end{confronto}
+
+\section{Sincronizzazione con \texttt{WaitGroup}}\label{sec:waitgroup}
+
+\cod{sync.WaitGroup} permette a un gruppo di goroutine di \emph{attendere
+collettivamente} un evento prima di proseguire in modo indipendente. È come un
+\textbf{contatore sicuro per la concorrenza} con tre operazioni: \cod{Add},
+\cod{Done} e \cod{Wait}.
+
+Due usi tipici, indicati dalle slide:
+
+\begin{enumerate}
+  \item \textbf{Pulizia}: assicurarsi che \emph{tutte} le goroutine (\cod{main}
+        compresa) terminino prima della fine del programma;
+  \item \textbf{Pattern BSP} (\emph{Bulk Synchronous Parallel}): le goroutine
+        lavorano in modo indipendente per un po', poi attendono a una
+        \emph{barriera} prima di procedere; lo scambio di dati può avvenire
+        alla barriera.
+\end{enumerate}
+
+\subsection{Uso per la pulizia}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/waitgroup.go}}]
+// waitgroup.go - sync.WaitGroup per attendere un gruppo di goroutine
+// (slide 64).
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func worker(id int, results []int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// Ogni goroutine scrive in una posizione DIVERSA della slice: non c'è
+	// condivisione dello stesso elemento, quindi non serve un lock.
+	results[id] = id * id
+}
+
+func main() {
+	results := make([]int, 5)
+	var wg sync.WaitGroup
+
+	for i := range results {
+		wg.Add(1) // un'unità in più da attendere
+		go worker(i, results, &wg)
+	}
+	wg.Wait() // attende che tutti abbiano chiamato Done
+
+	// Dopo Wait tutte le scritture sono visibili a main.
+	fmt.Println(results) // [0 1 4 9 16]
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+[0 1 4 9 16]
+\end{lstlisting}
+
+Ogni goroutine scrive nella \emph{propria} posizione di \cod{results}: non c'è
+condivisione dello stesso elemento, quindi non servono lock. Dopo
+\cod{wg.Wait()} le scritture di tutte le goroutine sono visibili a \cod{main}:
+\cod{Wait} stabilisce la sincronizzazione necessaria.
+
+\subsection{Uso come barriera: il pattern BSP}
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/bsp\_barrier.go}}]
+// bsp_barrier.go - Bulk Synchronous Parallel con WaitGroup come barriera
+// (slide 64).
+//
+// Pattern BSP: le goroutine lavorano indipendentemente (fase di calcolo),
+// poi attendono tutte a una barriera; solo dopo si passa alla fase
+// successiva, in cui i dati prodotti sono visibili a tutti.
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	const n = 4
+	partial := make([]int, n)
+
+	// Fase 1: ogni goroutine calcola un risultato parziale.
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			partial[i] = (i + 1) * 10
+		}()
+	}
+	wg.Wait() // BARRIERA
+
+	// Scambio dati alla barriera: ogni goroutine della fase 2 legge
+	// i risultati parziali di tutte le altre.
+	total := 0
+	for _, p := range partial {
+		total += p
+	}
+	fmt.Println("totale dopo la fase 1:", total) // 100
+
+	// Fase 2: ogni goroutine usa il totale globale.
+	shares := make([]float64, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			shares[i] = float64(partial[i]) / float64(total)
+		}()
+	}
+	wg.Wait() // seconda barriera
+	fmt.Println("quote:", shares)
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+totale dopo la fase 1: 100
+quote: [0.1 0.2 0.3 0.4]
+\end{lstlisting}
+
+Nella fase~1 ogni goroutine calcola un risultato parziale; la prima
+\cod{wg.Wait()} è la \textbf{barriera}: nessuno passa alla fase~2 prima che tutti
+abbiano finito. Alla barriera i dati sono scambiati: \cod{main} somma i parziali
+($10+20+30+40=100$). Nella fase~2 ogni goroutine usa il totale globale per
+calcolare la propria quota. Il \cod{WaitGroup} è riutilizzabile: il contatore
+torna a zero e si può ricominciare con nuove chiamate a \cod{Add}.
+
+\begin{confronto}{C, Python, Java}
+\cod{WaitGroup} corrisponde a \cod{pthread\_join} su un insieme di thread, a
+\cod{Thread.join()} (Python e Java) o, più da vicino, al
+\cod{CountDownLatch} di Java. Per la barriera, \cod{CyclicBarrier} (Java) o
+\cod{pthread\_barrier\_t} (C).
+\end{confronto}
+
+\section{Priorità e scheduling}\label{sec:priority}
+
+Le goroutine \textbf{non hanno una schedulazione a priorità}: lo scheduler di Go
+punta su equità e semplicità. Per imporre una priorità occorre realizzarla
+\emph{a livello applicativo}, con una complessità aggiuntiva. Due approcci per
+simularla, indicati dalle slide:
+
+\begin{enumerate}
+  \item usare \textbf{più channel} per classi di priorità diverse (alta,
+        bassa);
+  \item usare una \textbf{coda con priorità} (\emph{heap}) per ordinare i task
+        per priorità.
+\end{enumerate}
+
+L'esempio seguente realizza il primo approccio.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/priority.go}}]
+// priority.go - Simulare priorità con più channel (slide 65).
+//
+// Lo scheduler di Go non ha priorità: la si implementa a livello di
+// applicazione. Qui due channel (alta/bassa priorità); il consumatore
+// controlla SEMPRE prima il channel ad alta priorità con un select non
+// bloccante e passa a quello a bassa priorità solo se il primo è vuoto.
+package main
+
+import "fmt"
+
+func main() {
+	high := make(chan string, 3)
+	low := make(chan string, 3)
+
+	// I task a bassa priorità vengono inseriti per primi, di proposito.
+	low <- "low-1"
+	low <- "low-2"
+	high <- "high-1"
+	high <- "high-2"
+
+	const total = 4
+	for done := 0; done < total; done++ {
+		select {
+		case t := <-high: // controllato per primo
+			fmt.Println("eseguo", t)
+		default:
+			// Nessun task ad alta priorità: si serve il basso.
+			select {
+			case t := <-low:
+				fmt.Println("eseguo", t)
+			default:
+			}
+		}
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+eseguo high-1
+eseguo high-2
+eseguo low-1
+eseguo low-2
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+I task a bassa priorità sono inseriti per primi, di proposito. Il consumatore, a
+ogni giro, esegue prima un \cod{select} \emph{non bloccante} sul channel ad alta
+priorità; solo se questo è vuoto (ramo \cod{default}) tenta il channel a bassa
+priorità con un secondo \cod{select}. Il risultato è che tutti i task \cod{high}
+vengono serviti prima di qualunque \cod{low}, indipendentemente dall'ordine di
+inserimento. Si noti che l'ordine \emph{non è garantito dallo scheduler} ma
+dalla struttura del codice applicativo, come ci si aspetta.
+
+\section{Deadlock}\label{sec:deadlock}
+
+Un \textbf{deadlock} si verifica quando tutte le goroutine sono bloccate in attesa
+di eventi che nessuna di loro potrà produrre. L'esempio più semplice:
+inviare su un channel senza buffer dalla stessa goroutine che dovrebbe
+riceverne il valore.
+
+\begin{attenzione}[Errore comune: errori nella gestione dei channel]
+Il programma seguente termina \emph{volutamente} con un errore fatale. L'invio
+\cod{ch <- 1} blocca finché qualcuno riceve, ma l'unica goroutine esistente è
+proprio quella bloccata: nessuno riceverà mai. Il runtime di Go, quando
+rileva che \emph{tutte} le goroutine sono bloccate, abortisce il programma.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{06\_concurrency/pitfall\_deadlock.go}}]
+// pitfall_deadlock.go - ERRORE COMUNE: deadlock su channel senza buffer.
+//
+// ATTENZIONE: questo programma TERMINA VOLUTAMENTE con un errore fatale:
+//
+//	fatal error: all goroutines are asleep - deadlock!
+//
+// L'invio su un channel senza buffer blocca finché qualcuno riceve, ma
+// l'unica goroutine esistente è quella bloccata: nessuno riceverà mai.
+// Il runtime lo rileva e abortisce il programma (exit code 2).
+package main
+
+import "fmt"
+
+func main() {
+	ch := make(chan int)
+
+	// ERRORE: invio bloccante nella stessa goroutine che dovrebbe ricevere.
+	ch <- 1
+	fmt.Println(<-ch) // mai raggiunto
+
+	// Correzioni possibili: (1) channel con buffer make(chan int, 1);
+	// (2) inviare da un'altra goroutine: go func() { ch <- 1 }().
+}
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 1 [chan send]:
+main.main()
+        .../pitfall_deadlock.go:18 +0x36
+exit status 2
+\end{lstlisting}
+Rimedi: un channel con buffer (\cod{make(chan int, 1)}) oppure inviare da
+un'altra goroutine (\cod{go func() \{ ch <- 1 \}()}). Si noti che il
+rilevamento automatico funziona solo quando \emph{tutte} le goroutine sono
+bloccate: se ne esiste una ancora attiva, una goroutine bloccata resta
+semplicemente ferma (\emph{goroutine leak}) senza alcun messaggio.
+\end{attenzione}
+
+\section{Riepilogo degli errori comuni nella concorrenza}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.58\textwidth}@{}}
+\toprule
+\textbf{Errore} & \textbf{Conseguenza e rimedio}\\
+\midrule
+\cod{main} termina prima delle goroutine & Le goroutine sono abbandonate.
+Usare \cod{sync.WaitGroup} o un channel \cod{done}.\\[0.4em]
+Accesso concorrente non protetto & Data race, aggiornamenti persi. Usare
+\cod{sync.Mutex} o comunicare via channel.\\[0.4em]
+\cod{wg.Add} dentro la goroutine & \cod{Wait} può ritornare troppo presto.
+Chiamare \cod{Add} prima di \cod{go}.\\[0.4em]
+Invio su channel chiuso & Panic. Chiudere solo dal mittente, una sola volta.\\[0.4em]
+\cod{range} su channel mai chiuso & Blocco permanente. Il mittente deve fare
+\cod{close}.\\[0.4em]
+Invio/ricezione senza controparte & Deadlock. Usare buffer, un'altra
+goroutine o \cod{select} con \cod{default}.\\[0.4em]
+Assumere un ordine tra goroutine & Output variabile. L'ordine si ottiene
+solo con sincronizzazione esplicita.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ===========================================================================
+\chapter{Test e benchmark}\label{ch:test}
+% ===========================================================================
+
+\section{Il package \texttt{testing}}
+
+Il package \cod{testing} della libreria standard fornisce gli strumenti per
+scrivere \textbf{unit test}. Le convenzioni, interamente imposte dal toolchain:
+
+\begin{itemize}
+  \item i test stanno, di norma, in file il cui nome termina con
+        \texttt{\_test.go} (per esempio \texttt{abs\_test.go}); questi file
+        sono compilati solo da \cod{go test} e non finiscono nel programma;
+  \item una funzione di test si chiama \cod{TestXxx}, dove \cod{Xxx} richiama il
+        nome della funzione sotto test, e riceve un parametro
+        \cod{*testing.T};
+  \item i test si eseguono con \cod{go test}.
+\end{itemize}
+
+\begin{lstlisting}[style=gocode,numbers=none,caption={Il test della slide}]
+func TestAbs(t *testing.T) {
+	got := Abs(-1)
+	if got != 1 {
+		t.Errorf("Abs(-1) = %d; want 1", got)
+	}
+}
+\end{lstlisting}
+
+L'oggetto \cod{t} serve a segnalare i fallimenti: \cod{t.Errorf} marca il test
+come fallito ma lo lascia proseguire, \cod{t.Fatalf} lo interrompe subito. Non
+esistono \emph{assert}: si usa un normale \cod{if} e si segnala l'errore.
+
+\subsection{Esempio pratico}
+
+La cartella \texttt{07\_testing\_and\_tools} è un package ordinario (\cod{package
+tools}), non un programma \cod{main}: contiene la funzione sotto test e i file
+di test.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{07\_testing\_and\_tools/abs.go}}]
+// Package tools contiene la funzione sotto test per gli esempi di
+// testing e benchmarking (slide 71-72).
+//
+// Non è un package main: non si esegue con "go run", ma con
+//
+//	go test ./07_testing_and_tools/
+//	go test -bench=. ./07_testing_and_tools/
+package tools
+
+// Abs restituisce il valore assoluto di n.
+func Abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+// FillAppend costruisce una slice di n elementi partendo da una slice
+// vuota e usando append (può dover riallocare più volte).
+func FillAppend(n int) []int {
+	var s []int
+	for i := 0; i < n; i++ {
+		s = append(s, i)
+	}
+	return s
+}
+
+// FillMake costruisce la stessa slice allocando in anticipo la capacità
+// con make: una sola allocazione.
+func FillMake(n int) []int {
+	s := make([]int, 0, n)
+	for i := 0; i < n; i++ {
+		s = append(s, i)
+	}
+	return s
+}
+\end{lstlisting}
+\begin{lstlisting}[style=gocode,caption={\texttt{07\_testing\_and\_tools/abs\_test.go}}]
+package tools
+
+import "testing"
+
+// I test stanno in file *_test.go; le funzioni si chiamano TestXxx e
+// ricevono un *testing.T.
+func TestAbs(t *testing.T) {
+	got := Abs(-1)
+	if got != 1 {
+		// Errorf segna il test come fallito ma lo lascia proseguire.
+		t.Errorf("Abs(-1) = %d; want 1", got)
+	}
+}
+
+func TestAbsPositive(t *testing.T) {
+	if got := Abs(5); got != 5 {
+		t.Errorf("Abs(5) = %d; want 5", got)
+	}
+}
+
+// Verifica che le due costruzioni producano lo stesso risultato.
+func TestFillEquivalent(t *testing.T) {
+	a, b := FillAppend(100), FillMake(100)
+	if len(a) != len(b) {
+		t.Fatalf("lunghezze diverse: %d vs %d", len(a), len(b))
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			t.Fatalf("diverse in posizione %d", i)
+		}
+	}
+}
+\end{lstlisting}
+
+Si esegue dalla cartella \texttt{examples/}:
+
+\begin{lstlisting}[style=shell]
+go test -v ./07_testing_and_tools/
+\end{lstlisting}
+
+\begin{lstlisting}[style=output]
+=== RUN   TestAbs
+--- PASS: TestAbs (0.00s)
+=== RUN   TestAbsPositive
+--- PASS: TestAbsPositive (0.00s)
+=== RUN   TestFillEquivalent
+--- PASS: TestFillEquivalent (0.00s)
+PASS
+ok  	goguide/07_testing_and_tools	(cached)
+\end{lstlisting}
+
+\subsubsection*{Analisi del codice}
+
+\cod{go test} compila il package insieme ai file \cod{\_test.go}, esegue ogni
+funzione \cod{TestXxx} e riporta \cod{PASS} o \cod{FAIL}. Con \cod{-v} si
+vede ogni test; senza, solo il risultato finale (\cod{ok}). Si noti l'uso di
+\cod{t.Fatalf} in \cod{TestFillEquivalent}: se le lunghezze differiscono è inutile
+confrontare gli elementi, quindi si interrompe subito.
+
+\begin{confronto}{C, Python, Java}
+Go incorpora il framework di test nel toolchain: non servono dipendenze
+esterne come \emph{JUnit} (Java), \emph{pytest}/\emph{unittest} (Python) o
+\emph{CUnit}/\emph{Unity} (C). Le convenzioni sui nomi sostituiscono le
+annotazioni e la configurazione.
+\end{confronto}
+
+\section{Benchmark}
+
+Go fornisce anche strumenti per misurare le \textbf{prestazioni} del codice con i
+\emph{benchmark}. I benchmark stanno nei file \texttt{\_test.go} e il loro nome
+inizia con \cod{Benchmark}; ricevono un \cod{*testing.B}.
+
+\begin{lstlisting}[style=gocode,numbers=none,caption={Il benchmark della slide}]
+func BenchmarkXxx(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Xxx(...)
+	}
+}
+\end{lstlisting}
+
+Il benchmark esegue la funzione \cod{b.N} volte per raccogliere dati sulle
+prestazioni; il runner \emph{regola} \cod{b.N}, ripetendo l'esecuzione più volte
+finché la misura è accurata. Si lanciano con \cod{go test -bench=.}.
+
+\subsection{Esempio: \texttt{make} contro \texttt{append}}
+
+Le slide propongono di confrontare la costruzione di una slice con \cod{append}
+partendo da una slice vuota (che può dover riallocare più volte) con la
+preallocazione della capacità tramite \cod{make}. Le funzioni misurate sono
+\cod{FillAppend} e \cod{FillMake} nel file \texttt{abs.go} qui sopra.
+
+\begin{lstlisting}[style=gocode,caption={\texttt{07\_testing\_and\_tools/benchmark\_test.go}}]
+package tools
+
+import "testing"
+
+// sink è una variabile a livello di package: assegnarvi il risultato
+// impedisce al compilatore di scartare o allocare sullo stack la slice
+// (altrimenti, con inlining e dimensione costante, il benchmark di make
+// risulterebbe senza allocazioni e il confronto sarebbe falsato).
+var sink []int
+
+// Benchmark: il runner sceglie b.N in modo adattivo, ripetendo il corpo
+// finché la misura è stabile.
+//
+//	go test -bench=. ./07_testing_and_tools/
+
+func BenchmarkFillAppend(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sink = FillAppend(1000)
+	}
+}
+
+func BenchmarkFillMake(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sink = FillMake(1000)
+	}
+}
+\end{lstlisting}
+
+Esecuzione (macchina usata per la verifica: CPU Intel Core i7-13700H, Windows):
+
+\begin{lstlisting}[style=shell]
+go test -run NONE -bench "." -benchmem ./07_testing_and_tools/
+\end{lstlisting}
+
+\begin{lstlisting}[style=output,basicstyle=\ttfamily\footnotesize]
+BenchmarkFillAppend-20   220239   5957 ns/op   25208 B/op   12 allocs/op
+BenchmarkFillMake-20     513416   3160 ns/op    8192 B/op    1 allocs/op
+\end{lstlisting}
+(Le colonne, separate da tabulazioni nell'output originale, sono qui
+allineate con spazi; i valori sono quelli misurati: iterazioni, tempo per
+operazione, byte e numero di allocazioni per operazione.)
+
+\subsubsection*{Analisi del risultato}
+
+\begin{itemize}
+  \item I tempi assoluti (\cod{ns/op}) \textbf{dipendono dalla macchina} e variano
+        da esecuzione a esecuzione: i numeri sopra sono una misura reale ma non
+        riproducibile identica altrove. Ciò che si ripete è il
+        \emph{confronto}: la versione con \cod{make} è più veloce.
+  \item La differenza si spiega con le allocazioni: \cod{append} su una slice
+        vuota riallocava 12 volte (cresce a salti, copiando ogni volta
+        l'array), occupando 25\,208 byte allocati in totale; \cod{make} con
+        capacità nota alloca una sola volta, 8\,192 byte, esattamente lo spazio
+        di 1000 \cod{int} da 8 byte.
+  \item \textbf{Perché \cod{sink}?} Nella prima versione del benchmark il risultato
+        veniva scartato: il compilatore, che inline-a funzioni piccole e conosce
+        la dimensione costante, poteva allocare la slice sullo stack e il
+        benchmark di \cod{make} riportava \emph{zero} allocazioni, falsando il
+        confronto. Assegnando il risultato a una variabile di package
+        (\cod{sink}) la slice «scappa» sullo heap e la misura è equa. È una
+        lezione generale: un benchmark misura anche le ottimizzazioni del
+        compilatore, quindi va scritto in modo da impedire che scartino il
+        lavoro da misurare.
+\end{itemize}
+
+\begin{attenzione}[Errori comuni nei test e nei benchmark]
+\begin{itemize}
+  \item Il file non termina con \texttt{\_test.go}, oppure la funzione non
+        inizia con \cod{Test}/\cod{Benchmark} (con la maiuscola): \cod{go test}
+        la ignora silenziosamente e si crede di avere test che non esistono.
+  \item Dimenticare di usare \cod{b.N} come numero di iterazioni nel ciclo:
+        il benchmark misurerebbe una sola esecuzione.
+  \item Confrontare tempi misurati su macchine diverse o con altro carico in
+        esecuzione.
+\end{itemize}
+\end{attenzione}
+
+\section{Argomenti citati ma non sviluppati}
+
+L'ultima parte delle slide elenca argomenti \emph{ulteriori}, la cui trattazione
+completa è rimandata ad altro materiale: \textbf{RPC in Go} (le slide rimandano
+alle slide del corso sulla comunicazione e sulle RPC) e, come esempio dei
+«molti altri aspetti da esplorare», il \textbf{supporto HTTP del package
+\cod{net/http}}. Questa guida li menziona senza svilupparli, per restare nel
+perimetro delle slide; di \cod{net/http} compare solo il tipo
+\cod{http.ResponseWriter}\,/\,\cod{*http.Request} nell'esempio del middleware
+(Sezione~\ref{sec:funzioni-middleware}). Moduli, funzioni variadiche, gestione
+degli errori, strumenti e test, anch'essi elencati come «argomenti
+aggiuntivi», sono invece trattati nei capitoli~\ref{ch:struttura},
+\ref{ch:funzioni}, \ref{ch:oop} e in questo.
+
+% ===========================================================================
+\chapter*{Conclusione e riepilogo}
+\addcontentsline{toc}{chapter}{Conclusione e riepilogo}
+\markboth{Conclusione}{Conclusione}
+% ===========================================================================
+
+Go è un linguaggio piccolo, con poche regole applicate in modo rigido. Se si
+guardano insieme i capitoli, le scelte di progetto si ricompongono in un disegno
+coerente: \emph{semplicità} (un solo ciclo, nessuna classe, nessuna aritmetica sui
+puntatori), \emph{sicurezza} (tipizzazione statica, garbage collector,
+controllo dei limiti, valori zero) e \emph{scalabilità} (goroutine e channel
+come cittadini di prima classe).
+
+\section*{Riepilogo dei concetti principali}
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{0.26\textwidth}p{0.68\textwidth}@{}}
+\toprule
+\textbf{Concetto} & \textbf{Punto chiave da ricordare}\\
+\midrule
+Package e visibilità & Maiuscola iniziale $\Rightarrow$ esportato. Esecuzione da \cod{main.main}.\\
+Toolchain & \cod{go run}, \cod{go build}, \cod{go install}; i moduli con \cod{go.mod}; formattazione con \cod{gofmt}.\\
+Variabili & \cod{var} ovunque, \cod{:=} solo nelle funzioni; valore zero per ogni tipo.\\
+Tipi & Conversioni sempre esplicite; inferenza dal lato destro.\\
+Funzioni & Risultati multipli, risultati con nome, variadiche, anonime, closure che catturano variabili.\\
+Controllo di flusso & Un solo \cod{for}; \cod{if} con istruzione iniziale; \cod{switch} senza fallthrough; \cod{defer} in ordine LIFO con argomenti valutati subito.\\
+Puntatori & \cod{\&} e \cod{*}, nessuna aritmetica, \cod{nil}, sicuro restituire l'indirizzo di una locale.\\
+Struct, array & Valori, copiati nelle assegnazioni; la lunghezza dell'array fa parte del tipo.\\
+Slice & Vista \emph{(puntatore, len, cap)} su un array; \cod{append} va \emph{riassegnato}.\\
+Map & Riferimento a tabella hash; chiave assente $\Rightarrow$ valore zero; usare \cod{v, ok}; ordine non specificato.\\
+Metodi e interfacce & Receiver per valore o puntatore; interfacce \emph{implicite} basate sul comportamento.\\
+Errori & Valori di tipo \cod{error}, ultimo risultato; \cod{if err != nil}.\\
+Goroutine & Thread leggeri gestiti dal runtime; \cod{main} non le attende; nessun ordine garantito.\\
+Channel & Code tipizzate e thread-safe; senza buffer sincronizzano; \cod{close} solo dal mittente; \cod{range} fino alla chiusura.\\
+\cod{select} & Attesa su più channel; scelta casuale tra i pronti; \cod{default} per non bloccare.\\
+Timer & Un canale \cod{C} che scatta dopo una durata; \cod{Stop()} per annullare.\\
+Sincronizzazione & \cod{sync.Mutex}, \cod{sync.RWMutex}, \cod{sync.WaitGroup} (anche come barriera BSP).\\
+Test e benchmark & File \texttt{\_test.go}, \cod{TestXxx(*testing.T)}, \cod{BenchmarkXxx(*testing.B)}; \cod{go test}.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Per proseguire}
+
+Le slide chiudono ricordando che questa è \emph{solo un'introduzione}: restano da
+esplorare, tra l'altro, le RPC in Go e il supporto HTTP del package
+\cod{net/http}. Il modo più efficace per consolidare quanto appreso è
+modificare gli esempi della cartella \texttt{examples/}: cambiare le capacità
+delle slice e osservare \cod{append}, togliere un \cod{close} e provocare un
+deadlock, rimuovere il mutex dal contatore e osservare la data race.
+
+% ===========================================================================
+\appendix
+\chapter{Mappa tra slide, guida ed esempi}
+% ===========================================================================
+
+La tabella associa i numeri delle slide (quelli stampati sulle slide)
+ai capitoli della guida e ai file in \texttt{examples/}. Le slide 1--2 contengono
+solo cenni storici e classifiche (omessi) e la slide 73 solo riferimenti
+bibliografici e web (omessa).
+
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{@{}L{1.4cm}L{4.9cm}L{1.2cm}L{6.1cm}@{}}
+\toprule
+\textbf{Slide} & \textbf{Argomento} & \textbf{Cap.} & \textbf{Esempi}\\
+\midrule
+\endhead
+1--5 & Obiettivi, eredità da C, novità, sistemi distribuiti & \ref{ch:go} & ---\\
+6 & Go per applicazioni cloud-native (Go Cloud) & \ref{ch:go} & frammento non eseguibile\\
+7 & Editor, plugin, \cod{gopls} & \ref{ch:go} & ---\\
+8--9 & Hello world, package, \cod{main}, \cod{fmt} & \ref{ch:struttura} & \texttt{helloworld.go}\\
+10 & Toolchain: \cod{go run/build/install} & \ref{ch:struttura} & ---\\
+11 & Package e visibilità & \ref{ch:struttura} & \texttt{imports.go}\\
+12 & Import & \ref{ch:struttura} & \texttt{imports.go}\\
+13--15 & Funzioni, risultati multipli, errori & \ref{ch:funzioni} & \texttt{functions.go}, \texttt{swap.go}, \texttt{result\_and\_error.go}\\
+16 & Valori di ritorno con nome & \ref{ch:funzioni} & \texttt{named\_returns.go}\\
+17 & Variabili & \ref{ch:tipi} & \texttt{variables.go}\\
+18 & Tipi, conversioni, inferenza & \ref{ch:tipi} & \texttt{types.go}\\
+19--22 & Controllo di flusso, \cod{for}, \cod{echo} & \ref{ch:flusso} & \texttt{for\_loops.go}, \texttt{echo.go}\\
+23--24 & \cod{if}/\cod{else} & \ref{ch:flusso} & \texttt{if\_else.go}\\
+25 & \cod{switch} & \ref{ch:flusso} & \texttt{switch.go}\\
+26 & \cod{defer} & \ref{ch:flusso} & \texttt{defer.go}, \texttt{defer\_lifo.go}\\
+27 & Puntatori & \ref{ch:dati} & \texttt{pointers.go}\\
+28 & Struct e array & \ref{ch:dati} & \texttt{structs.go}, \texttt{arrays.go}\\
+29--31 & Slice, \cod{len}/\cod{cap}, \cod{make} & \ref{ch:dati} & \texttt{slices.go}, \texttt{making\_slice.go}\\
+32--33 & \cod{append} & \ref{ch:dati} & \texttt{append.go}, \texttt{slice\_pitfalls.go}\\
+34 & Map & \ref{ch:dati} & \texttt{maps.go}\\
+35--36 & \cod{range} & \ref{ch:dati} & \texttt{range.go}, \texttt{range2.go}\\
+37--39 & Funzioni anonime, closure & \ref{ch:funzioni} & \texttt{anonymous.go}, \texttt{closure.go}, \texttt{closure\_fib.go}\\
+40 & Closure come middleware & \ref{ch:funzioni} & \texttt{middleware.go}\\
+41 & Metodi & \ref{ch:oop} & \texttt{methods.go}\\
+42--45 & Interfacce & \ref{ch:oop} & \texttt{interface.go}, \texttt{interface\_slice.go}\\
+46--48 & Concorrenza, goroutine, scheduler & \ref{ch:conc} & \texttt{goroutine\_termination.go}, \texttt{goroutine\_wait.go}, \texttt{gomaxprocs.go}\\
+49--52 & Channel & \ref{ch:conc} & \texttt{channel\_sync.go}, \texttt{channel\_sum.go}, \texttt{channel\_fib.go}\\
+53 & Channel con/senza buffer & \ref{ch:conc} & \texttt{channel\_buffered.go}\\
+54--55 & \cod{close}, \cod{range} su channel & \ref{ch:conc} & \texttt{channel\_close.go}, \texttt{channel\_range.go}, \texttt{pitfall\_send\_closed.go}\\
+56--59 & \cod{select}, \cod{default} & \ref{ch:conc} & \texttt{channel\_fib\_select.go}, \texttt{select\_multiplex.go}, \texttt{select\_default.go}\\
+60 & Timer & \ref{ch:conc} & \texttt{timers.go}\\
+61--63 & Mutex con channel, \cod{sync.Mutex}, \cod{RWMutex} & \ref{ch:conc} & \texttt{mutex\_using\_channel.go}, \texttt{mutex.go}, \texttt{race\_counter.go}, \texttt{rwmutex.go}\\
+64 & \cod{WaitGroup}, BSP & \ref{ch:conc} & \texttt{waitgroup.go}, \texttt{bsp\_barrier.go}\\
+65 & Priorità & \ref{ch:conc} & \texttt{priority.go}\\
+66 & Argomenti aggiuntivi (RPC, HTTP: citati) & \ref{ch:test} & ---\\
+67 & Moduli & \ref{ch:struttura} & \texttt{go.mod}\\
+68 & Funzioni variadiche & \ref{ch:funzioni} & \texttt{variadic.go}\\
+69 & Gestione degli errori & \ref{ch:oop} & \texttt{errors.go}\\
+70 & Regole del compilatore, \cod{gofmt}, \cod{goimports}, \cod{godoc} & \ref{ch:struttura} & ---\\
+71--72 & Test e benchmark & \ref{ch:test} & \texttt{abs.go}, \texttt{abs\_test.go}, \texttt{benchmark\_test.go}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+Esempi aggiuntivi non presenti nelle slide, scritti per chiarire concetti già
+trattati: \texttt{interface\_slice.go}, \texttt{channel\_sync.go},
+\texttt{select\_multiplex.go}, \texttt{bsp\_barrier.go}, \texttt{priority.go},
+\texttt{race\_counter.go}, \texttt{slice\_pitfalls.go}, \texttt{gomaxprocs.go},
+\texttt{defer\_lifo.go}, \texttt{anonymous.go}, \texttt{pitfall\_deadlock.go},
+\texttt{pitfall\_send\_closed.go}, oltre agli esempi sugli errori comuni
+inseriti negli altri file.
+
+% ===========================================================================
+\chapter{Note della verifica incrociata}
+% ===========================================================================
+
+\section{Metodo}
+
+La verifica ha confrontato quattro elementi: le slide originali, il testo di
+questa guida, i file \texttt{.go} e gli output. In concreto:
+
+\begin{itemize}
+  \item tutte le 73 slide sono state lette prima di scrivere, e ogni argomento
+        tecnico è stato associato a una sezione (Appendice~A);
+  \item i listati della guida sono inclusi \emph{dai file reali}
+        (\texttt{examples/}), quindi la corrispondenza è esatta per costruzione;
+  \item gli output mostrati sono stati ottenuti eseguendo i programmi con Go
+        1.27.3; quelli non deterministici sono stati eseguiti più volte e
+        indicati come tali;
+  \item ogni file è stato formattato con \cod{gofmt} e controllato con
+        \cod{go vet}.
+\end{itemize}
+
+\section{Errori e imprecisioni trovati nelle slide}
+
+Per ciascun punto si distingue il \textbf{problema di trascrizione} (errore
+materiale nella slide) dalla \textbf{correzione o precisazione tecnica}
+introdotta dalla guida.
+
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{@{}L{0.5cm}L{1.2cm}L{5.5cm}L{6.4cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Slide} & \textbf{Osservazione} & \textbf{Trattamento nella guida}\\
+\midrule
+\endhead
+1 & 58 & \emph{Trascrizione.} \cod{fibonacci(c, quit)} usa la variabile \cod{c}, mai dichiarata (si dichiara \cod{ch}); non compila (\texttt{undefined: c}). &
+Corretto in \cod{fibonacci(ch, quit)} in \texttt{channel\_fib\_select.go}; segnalato nel Capitolo~\ref{ch:conc}.\\
+2 & 56 & \emph{Trascrizione.} \cod{case mgs1 := <-ch1} è un refuso per \cod{msg1}. &
+Usato \cod{msg1}; segnalato nel Capitolo~\ref{ch:conc}.\\
+3 & 48 & \emph{Precisazione tecnica.} «Set \cod{runtime.GOMAXPROCS} environment variable» mescola due cose: la variabile d'ambiente si chiama \cod{GOMAXPROCS}; \cod{runtime.GOMAXPROCS(n)} è la funzione. &
+Distinte le due forme (Sez.~\ref{sec:goroutine}); nessuna modifica al concetto.\\
+4 & 11 & \emph{Aggiornamento.} Il messaggio d'errore per \cod{math.pi} oggi è \texttt{undefined: math.pi (but have Pi)}; la slide riporta la forma più breve. &
+Riportato il messaggio ottenuto con Go 1.27.3.\\
+5 & 36 & \emph{Precisazione.} L'output \cod{a -> apple}, \cod{b -> banana} non è garantito: l'ordine di iterazione di una map è non specificato. &
+L'esempio itera su un elenco di chiavi ordinato a mano; spiegato nel Capitolo~\ref{ch:dati}.\\
+6 & 33 & \emph{Precisazione.} «Di norma il doppio della capacità precedente»: nell'esecuzione reale \cod{append(s, 2, 3, 4)} su una slice di capacità 2 dà capacità \textbf{6}, non 5 né 4. &
+Discusso in \texttt{append.go} e nel Capitolo~\ref{ch:dati}: la regola è un dettaglio d'implementazione.\\
+7 & 50, 53 & \emph{Precisazione.} «Invio e ricezione bloccano finché l'altro lato è pronto» vale solo per channel senza buffer. &
+Chiarito con un box nella Sezione~\ref{sec:buffered}.\\
+8 & 15 & \emph{Dipendenza dall'ambiente.} \cod{os.ReadFile("example.txt")} presuppone un file esistente. &
+Esempio reso autonomo creando il file in una directory temporanea.\\
+9 & 40 & \emph{Frammento incompleto.} \cod{timed} è mostrato senza \cod{hello}, imports e server. &
+Reso eseguibile con \cod{httptest}, senza rete.\\
+10 & 62 & \emph{Segnalazione di \cod{go vet}.} Il codice compila e funziona, ma vet segnala \texttt{return copies lock value} su \cod{NewLock}. &
+Codice mantenuto come nella slide; il warning è spiegato (Sez.~\ref{sec:mutex}).\\
+11 & 30 & \emph{Precisazione.} «Compile or run-time error if array length is exceeded»: l'errore è a compile time solo per indici \emph{costanti} su array; altrimenti è un panic a runtime. &
+Entrambi i casi mostrati con i messaggi reali (Cap.~\ref{ch:dati}).\\
+12 & 48 & \emph{Dato non verificabile qui.} Le stime «circa $5\times$ più veloci, $500\times$ meno memoria» non sono state misurate. &
+Riportate come \emph{dato delle slide}, non verificato.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Contenuto delle slide deliberatamente omesso}
+
+Come richiesto, non compaiono: la storia del linguaggio (anno di concezione e
+autori, slide 1), le classifiche di popolarità (slide 2), l'elenco dei
+riferimenti bibliografici e web (slide 73) e i collegamenti a siti esterni. Il
+frammento Go Cloud (slide 6) è riportato come testo ma non ha un file
+eseguibile perché dipende da una libreria esterna e da servizi cloud.
+
+\section{Verifica degli esempi}
+
+\begin{itemize}
+  \item Tutti i programmi della cartella \texttt{examples/} compilano ed
+        eseguono con Go 1.27.3 (Windows, amd64).
+  \item Due programmi terminano \emph{volutamente} con un errore, e sono
+        marcati nel codice e nel testo: \texttt{pitfall\_deadlock.go} (deadlock,
+        exit code 2) e \texttt{pitfall\_send\_closed.go} (panic, exit code 2).
+  \item Gli esempi con output non deterministico sono:
+        \texttt{goroutine\_termination.go}, \texttt{goroutine\_wait.go},
+        \texttt{select\_multiplex.go}, \texttt{race\_counter.go},
+        l'intercalarsi delle righe in \texttt{channel\_close.go} e i tempi di
+        \texttt{middleware.go} e dei benchmark.
+  \item Non sono stati eseguiti con il \emph{race detector} (\cod{-race}), che
+        richiede il supporto di CGO non disponibile nell'ambiente di verifica.
+        La data race di \texttt{race\_counter.go} è dimostrata dal risultato
+        errato, non dallo strumento.
+\end{itemize}
+
+\end{document}
+
